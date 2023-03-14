@@ -1,4 +1,3 @@
-
 extern crate alloc;
 
 /// Iterator from a [`PrefixArray`][super::PrefixArray]
