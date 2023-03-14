@@ -21,7 +21,7 @@ pub use iter::{IntoIter, Iter, IterMut};
 ///
 /// The generic parameter is mainly in place so that `&'a str`, `String`, and `&'static str` may all be used for the backing storage.
 ///
-/// The main downside of a [`PrefixArray`] over a radix trie type datastructure is that insertions have a significant `O(n)` cost,
+/// The main downside of a [`PrefixArray`] over a trie type datastructure is that insertions have a significant `O(n)` cost,
 /// so if you are adding multiple values over the lifetime of the [`PrefixArray`] it may become less efficient overall than a traditional tree
 #[derive(Debug, Clone)]
 pub struct PrefixArray<K: AsRef<str>, V>(pub(crate) Vec<(K, V)>);

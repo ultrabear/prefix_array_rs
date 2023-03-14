@@ -18,7 +18,7 @@ use super::map;
 ///
 /// The generic parameter is mainly in place so that `&'a str`, `String`, and `&'static str` may all be used for the backing storage.
 ///
-/// The main downside of a [`PrefixArraySet`] over a radix trie type datastructure is that insertions have a significant `O(n)` cost,
+/// The main downside of a [`PrefixArraySet`] over a trie type datastructure is that insertions have a significant `O(n)` cost,
 /// so if you are adding multiple values over the lifetime of the [`PrefixArraySet`] it may become less efficient overall than a traditional tree
 #[derive(Debug, Clone)]
 pub struct PrefixArraySet<K: AsRef<str>>(map::PrefixArray<K, ()>);
