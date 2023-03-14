@@ -1,0 +1,313 @@
+//! A Set API based on a prefix array, this module contains the [`PrefixArraySet`] type.
+
+#[cfg(any(test, feature = "std"))]
+extern crate std;
+
+extern crate alloc;
+
+use alloc::{borrow::ToOwned, vec::Vec};
+use core::ops::Deref;
+use ref_cast::{ref_cast_custom, RefCastCustom};
+
+mod iter;
+pub use iter::IntoIter;
+
+use super::map;
+
+/// A generic search-by-prefix array designed to find strings with common prefixes in `O(log n)` time, and easily search on subslices to refine a previous search.
+///
+/// The generic parameter is mainly in place so that `&'a str`, `String`, and `&'static str` may all be used for the backing storage.
+///
+/// The main downside of a [`PrefixArraySet`] over a radix trie type datastructure is that insertions have a significant `O(n)` cost,
+/// so if you are adding multiple values over the lifetime of the [`PrefixArraySet`] it may become less efficient overall than a traditional tree
+#[derive(Debug, Clone)]
+pub struct PrefixArraySet<K: AsRef<str>>(map::PrefixArray<K, ()>);
+
+impl<K: AsRef<str>> Default for PrefixArraySet<K> {
+    fn default() -> Self {
+        PrefixArraySet::new()
+    }
+}
+
+impl<K: AsRef<str>> PrefixArraySet<K> {
+    /// Create a new empty [`PrefixArraySet`].
+    ///
+    /// This function will not allocate anything.
+    #[must_use]
+    pub const fn new() -> Self {
+        Self(map::PrefixArray::new())
+    }
+
+    /// Creates a new empty [`PrefixArraySet`] with space for at least `capacity` elements.
+    ///
+    /// See [`Vec::with_capacity`] for additional notes.
+    ///
+    /// # Panics:
+    /// Panics if the new capacity exceeds `isize::MAX` bytes.
+    #[must_use]
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self(map::PrefixArray::with_capacity(capacity))
+    }
+
+    /// Reserves capacity for at least `additional` more elements to be inserted, the collection may reserve additional space as a speculative optimization.
+    /// Does nothing if capacity is greater than `additional`.
+    ///
+    /// See [`Vec::reserve`] for additional notes.
+    ///
+    /// # Panics:
+    /// Panics if the new capacity exceeds `isize::MAX` bytes.
+    pub fn reserve(&mut self, additional: usize) {
+        self.0.reserve(additional);
+    }
+
+    /// Reserves the minimum capacity to append `additional` more elements. Or, will not speculatively over-allocate like [`reserve`][PrefixArraySet::reserve].
+    /// Does nothing if capacity is greater than `additional`.
+    ///
+    /// See [`Vec::reserve_exact`] for additional notes.
+    ///
+    /// # Panics:
+    /// Panics if the new capacity exceeds `isize::MAX` bytes.
+    pub fn reserve_exact(&mut self, additional: usize) {
+        self.0.reserve_exact(additional);
+    }
+
+    /// Creates a new [`PrefixArraySet`] from a `Vec<K>`, removing any duplicate keys.
+    ///
+    /// This operation is `O(n log n)`.
+    #[must_use]
+    pub fn from_vec_lossy(v: Vec<K>) -> Self {
+        Self(map::PrefixArray::from_vec_lossy(
+            v.into_iter().map(|v| (v, ())).collect(),
+        ))
+    }
+
+    /// Inserts the given K into the [`PrefixArraySet`], returning true if the key was not already in the set
+    ///
+    /// This operation is `O(n)`.
+    pub fn insert(&mut self, key: K) -> bool {
+        self.0.insert(key, ()).is_none()
+    }
+
+    /// Adds a value to the set, replacing the existing value, if any, that is equal to the given one.  
+    /// Returns the replaced value.
+    pub fn replace(&mut self, mut key: K) -> Option<K> {
+        // This functionality is not available in the HashMap api so we will make it ourself
+        match (self.0)
+            .0
+            .binary_search_by_key(&key.as_ref(), |s| s.0.as_ref())
+        {
+            Ok(idx) => {
+                core::mem::swap(&mut (self.0).0[idx].0, &mut key);
+                Some(key)
+            }
+            Err(idx) => {
+                (self.0).0.insert(idx, (key, ()));
+                None
+            }
+        }
+    }
+
+    /// Removes all values with the prefix provided, shifting the array in the process to account for the empty space.
+    ///
+    /// This operation is `O(n)`.
+    pub fn drain_all_with_prefix<'a>(
+        &'a mut self,
+        prefix: &str,
+    ) -> impl Iterator<Item = K> + ExactSizeIterator + DoubleEndedIterator + 'a {
+        self.0.drain_all_with_prefix(prefix).map(|(k, _)| k)
+    }
+
+    /// Removes the value that matches the given key, returning true if it was present in the set
+    ///
+    /// This operation is `O(log n)` if the key was not found, and `O(n)` if it was.
+    pub fn remove(&mut self, key: &str) -> bool {
+        self.0.remove(key).is_some()
+    }
+
+    /// Returns the total capacity that the [`PrefixArraySet`] has.
+    #[must_use]
+    pub fn capacity(&self) -> usize {
+        self.0.capacity()
+    }
+
+    /// Clears the [`PrefixArraySet`], removing all values.
+    ///
+    /// Capacity will not be freed.
+    pub fn clear(&mut self) {
+        self.0.clear();
+    }
+
+    /// Shrinks the capacity of this collection as much as possible.
+    ///
+    /// Additional capacity may still be left over after this operation.
+    pub fn shrink_to_fit(&mut self) {
+        self.0.shrink_to_fit();
+    }
+
+    /// Shrinks the capacity of this collection with a lower limit. It will drop down no lower than the supplied limit.
+    ///
+    /// If the current capacity is less than the lower limit, this is a no-op.
+    pub fn shrink_to(&mut self, min_capacity: usize) {
+        self.0.shrink_to(min_capacity);
+    }
+}
+
+impl<K: AsRef<str>> Extend<K> for PrefixArraySet<K> {
+    /// Extends the [`PrefixArraySet`] with more values, skipping any duplicates.
+    ///
+    /// This operation is `O(n + k log k)` where k is the number of elements in the iterator.
+    fn extend<T>(&mut self, iter: T)
+    where
+        T: IntoIterator<Item = K>,
+    {
+        self.0.extend(iter.into_iter().map(|k| (k, ())));
+    }
+}
+
+#[cfg(feature = "std")]
+impl<K: AsRef<str>, H> From<std::collections::HashSet<K, H>> for PrefixArraySet<K> {
+    /// Performs a lossless conversion from a `HashSet<K>` to a `PrefixArraySet<K>` in `O(n log n)` time.
+    fn from(v: std::collections::HashSet<K, H>) -> Self {
+        let mut unsorted = v.into_iter().map(|k| (k, ())).collect::<Vec<(K, ())>>();
+        // can't use by_key because of lifetime issues with as_ref
+        unsorted.sort_unstable_by(|f, s| f.0.as_ref().cmp(s.0.as_ref()));
+
+        Self(map::PrefixArray(unsorted))
+    }
+}
+
+impl<K: AsRef<str>> From<PrefixArraySet<K>> for Vec<K> {
+    fn from(v: PrefixArraySet<K>) -> Vec<K> {
+        Vec::from(v.0).into_iter().map(|(k, _)| k).collect()
+    }
+}
+
+impl<K: AsRef<str>> Deref for PrefixArraySet<K> {
+    type Target = SetSubSlice<K>;
+
+    fn deref(&self) -> &Self::Target {
+        SetSubSlice::from_map_slice(&*self.0)
+    }
+}
+
+impl<K: AsRef<str>> core::borrow::Borrow<SetSubSlice<K>> for PrefixArraySet<K> {
+    fn borrow(&self) -> &SetSubSlice<K> {
+        self
+    }
+}
+
+impl<K: AsRef<str> + Clone> ToOwned for SetSubSlice<K> {
+    type Owned = PrefixArraySet<K>;
+
+    fn to_owned(&self) -> PrefixArraySet<K> {
+        // here we can assert the invariants were upheld
+        PrefixArraySet(map::PrefixArray(self.0.to_vec()))
+    }
+}
+
+/// A subslice of a [`PrefixArraySet`] in which all items contain a common prefix (which may be the unit prefix `""`).
+///
+/// The [`SetSubSlice`] does not store what that common prefix is for performance reasons (but it can be computed, see: [`SetSubSlice::common_prefix`]), it is up to the user to keep track of.
+#[derive(RefCastCustom, Debug)]
+#[repr(transparent)]
+pub struct SetSubSlice<K: AsRef<str>>(map::SubSlice<K, ()>);
+
+impl<K: AsRef<str>> SetSubSlice<K> {
+    // ref-cast needs the unsafe
+    #[allow(unsafe_code)]
+    #[ref_cast_custom]
+    // ref-cast ensures this is safe for us, be quiet clippy
+    #[allow(clippy::transmute_ptr_to_ptr)]
+    fn from_map_slice<'a>(v: &'a map::SubSlice<K, ()>) -> &'a Self;
+
+    /// Returns an iterator over all of the elements of this [`SetSubSlice`]
+    pub fn iter(&self) -> impl Iterator<Item = &K> + ExactSizeIterator + DoubleEndedIterator {
+        self.0.iter().map(|(k, _)| k)
+    }
+
+    /// Creates an owned copy of this [`SetSubSlice`] as a [`Vec`].
+    /// If you wish to preserve [`PrefixArraySet`] semantics consider using [`ToOwned`] instead.
+    pub fn to_vec(&self) -> Vec<K>
+    where
+        K: Clone,
+    {
+        self.0.to_vec().into_iter().map(|(k, _)| k).collect()
+    }
+
+    /// Returns the `SetSubSlice` where all `K` have the same prefix `prefix`.
+    ///
+    /// Will return an empty array if there are no matches.
+    ///
+    /// This operation is `O(log n)`
+    ///
+    /// # Examples
+    /// ```rust
+    /// # use prefix_array::PrefixArraySet;
+    /// let set = PrefixArraySet::from_iter(["foo", "bar", "baz"]);
+    ///
+    /// assert_eq!(set.find_all_with_prefix("b").to_vec(), vec!["bar", "baz"]);
+    /// ```
+    pub fn find_all_with_prefix<'a>(&'a self, prefix: &str) -> &'a Self {
+        Self::from_map_slice(self.0.find_all_with_prefix(prefix))
+    }
+
+    /// Compute the common prefix of this [`SetSubSlice`] from the data.
+    ///
+    /// This operation is `O(1)`, but it is not computationally free.
+    pub fn common_prefix(&self) -> &str {
+        self.0.common_prefix()
+    }
+
+    /// Returns whether this [`SetSubSlice`] contains the given key
+    ///
+    /// This operation is `O(log n)`.
+    pub fn contains(&self, key: &str) -> bool {
+        self.0.contains(key)
+    }
+
+    /// Returns whether this [`SetSubSlice`] is empty
+    pub const fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    /// Returns the length of this [`SetSubSlice`]
+    pub const fn len(&self) -> usize {
+        self.0.len()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use std::vec;
+
+    #[test]
+    fn submatches() {
+        let parray = PrefixArraySet::from_vec_lossy(vec![
+            "abcde", "234234", "among", "we", "weed", "who", "what", "why", "abde", "abch",
+            "america",
+        ]);
+
+        assert_eq!(
+            &["abcde", "abch", "abde"],
+            &*parray.find_all_with_prefix("ab").to_vec()
+        );
+
+        assert_eq!("ab", parray.find_all_with_prefix("ab").common_prefix());
+
+        let mut parraysingle = PrefixArraySet::from_vec_lossy(vec!["abcde"]);
+
+        assert_eq!("abcde", parraysingle.to_vec()[0]);
+        assert_eq!(
+            &["abcde"],
+            &*parraysingle.find_all_with_prefix("a").to_vec()
+        );
+
+        assert!(parraysingle.find_all_with_prefix("b").is_empty());
+
+        _ = parraysingle.drain_all_with_prefix("a");
+
+        assert!(parraysingle.is_empty());
+    }
+}
