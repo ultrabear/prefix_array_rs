@@ -17,6 +17,8 @@ use super::map;
 /// A generic search-by-prefix array designed to find strings with common prefixes in `O(log n)` time, and easily search on subslices to refine a previous search.
 ///
 /// The generic parameter is mainly in place so that `&'a str`, `String`, and `&'static str` may all be used for the backing storage.
+///  It is a logical error for an implementer of `AsRef<str>` to return different data across multiple calls while it remains in this container.
+///  Doing so renders the datastructure useless (but will NOT cause UB).
 ///
 /// The main downside of a [`PrefixArraySet`] over a trie type datastructure is that insertions have a significant `O(n)` cost,
 /// so if you are adding multiple values over the lifetime of the [`PrefixArraySet`] it may become less efficient overall than a traditional tree
