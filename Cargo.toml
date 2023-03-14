@@ -2,6 +2,11 @@
 name = "prefix_array"
 version = "0.1.0"
 edition = "2021"
+keywords = ["array", "collection", "generic", "prefix", "search"]
+categories = ["data-structures", "text-processing"]
+homepage = "https://github.com/ultrabear/prefix_array_rs"
+authors = ["Alexander Hall <bearodark@gmail.com>"]
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
