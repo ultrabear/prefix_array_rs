@@ -386,9 +386,7 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
     }
 
     /// An iterator visiting all key value pairs in sorted-by-key order, with mutable references to the values.
-    pub fn iter_mut(
-        &mut self,
-    ) -> IterMut<K, V> {
+    pub fn iter_mut(&mut self) -> IterMut<K, V> {
         IterMut(self.0.iter_mut())
     }
 
