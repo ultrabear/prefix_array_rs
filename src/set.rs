@@ -10,7 +10,7 @@ use core::ops::Deref;
 use ref_cast::{ref_cast_custom, RefCastCustom};
 
 mod iter;
-pub use iter::IntoIter;
+pub use iter::{IntoIter, Iter};
 
 use super::map;
 
@@ -221,8 +221,8 @@ impl<K: AsRef<str>> SetSubSlice<K> {
     fn from_map_slice<'a>(v: &'a map::SubSlice<K, ()>) -> &'a Self;
 
     /// Returns an iterator over all of the elements of this [`SetSubSlice`]
-    pub fn iter(&self) -> impl Iterator<Item = &K> + ExactSizeIterator + DoubleEndedIterator {
-        self.0.iter().map(|(k, _)| k)
+    pub fn iter(&self) -> Iter<K> {
+        Iter(self.0.iter())
     }
 
     /// Creates an owned copy of this [`SetSubSlice`] as a [`Vec`].
