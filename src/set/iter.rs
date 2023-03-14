@@ -59,6 +59,15 @@ impl<K: AsRef<str>> IntoIterator for super::PrefixArraySet<K> {
     }
 }
 
+impl<'a, K: AsRef<str>> IntoIterator for &'a super::PrefixArraySet<K> {
+    type Item = &'a K;
+    type IntoIter = Iter<'a, K>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        Iter(self.0.iter())
+    }
+}
+
 impl<K: AsRef<str>> core::iter::FromIterator<K> for super::PrefixArraySet<K> {
     fn from_iter<T: IntoIterator<Item = K>>(iter: T) -> Self {
         Self::from_vec_lossy(iter.into_iter().collect())
