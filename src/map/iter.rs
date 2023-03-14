@@ -27,7 +27,7 @@ impl<K: AsRef<str>, V> DoubleEndedIterator for IntoIter<K, V> {
 }
 
 /// Immutable view Iterator from a [`PrefixArray`][super::PrefixArray] or [`SubSlice`][super::SubSlice]
-pub struct Iter<'a, K: AsRef<str>, V>(core::slice::Iter<'a, (K, V)>);
+pub struct Iter<'a, K: AsRef<str>, V>(pub(super) core::slice::Iter<'a, (K, V)>);
 
 impl<'a, K: AsRef<str>, V> Iterator for Iter<'a, K, V> {
     type Item = (&'a K, &'a V);
@@ -51,7 +51,7 @@ impl<'a, K: AsRef<str>, V> DoubleEndedIterator for Iter<'a, K, V> {
 }
 
 /// Mutable view Iterator from a [`PrefixArray`][super::PrefixArray] or [`SubSlice`][super::SubSlice]
-pub struct IterMut<'a, K: AsRef<str>, V>(core::slice::IterMut<'a, (K, V)>);
+pub struct IterMut<'a, K: AsRef<str>, V>(pub(super) core::slice::IterMut<'a, (K, V)>);
 
 impl<'a, K: AsRef<str>, V> Iterator for IterMut<'a, K, V> {
     type Item = (&'a K, &'a mut V);

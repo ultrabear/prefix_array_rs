@@ -15,7 +15,7 @@ use ref_cast::{ref_cast_custom, RefCastCustom};
 mod vec_ext;
 use vec_ext::InsertMany;
 mod iter;
-pub use iter::IntoIter;
+pub use iter::{IntoIter, Iter, IterMut};
 
 /// A generic search-by-prefix array designed to find strings with common prefixes in `O(log n)` time, and easily search on subslices to refine a previous search.
 ///
@@ -276,8 +276,8 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
     }
 
     /// An immutable iterator over all the elements in this slice in sorted-by-key order.
-    pub fn iter(&self) -> impl Iterator<Item = (&K, &V)> + DoubleEndedIterator + ExactSizeIterator {
-        self.as_slice().iter().map(|(k, v)| (k, v))
+    pub fn iter(&self) -> Iter<K, V> {
+        Iter(self.as_slice().iter())
     }
 
     /// Creates an owned copy of this [`SubSlice`] as a [`Vec`].
@@ -386,8 +386,8 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
     /// An iterator visiting all key value pairs in sorted-by-key order, with mutable references to the values.
     pub fn iter_mut(
         &mut self,
-    ) -> impl Iterator<Item = (&K, &mut V)> + DoubleEndedIterator + ExactSizeIterator {
-        self.0.iter_mut().map(|(k, v)| (&*k, v))
+    ) -> IterMut<K, V> {
+        IterMut(self.0.iter_mut())
     }
 
     /// Returns whether this [`SubSlice`] is empty
