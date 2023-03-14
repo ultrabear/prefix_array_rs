@@ -53,7 +53,7 @@ impl<K: AsRef<str>, V> PrefixArray<K, V> {
     }
 
     /// Reserves capacity for at least `additional` more elements to be inserted, the collection may reserve additional space as a speculative optimization.
-    /// Does nothing if capacity is greater than `additional`.
+    /// Does nothing if capacity is already sufficient.
     ///
     /// See [`Vec::reserve`] for additional notes.
     ///
@@ -64,7 +64,7 @@ impl<K: AsRef<str>, V> PrefixArray<K, V> {
     }
 
     /// Reserves the minimum capacity to append `additional` more elements. Or, will not speculatively over-allocate like [`reserve`][PrefixArray::reserve].
-    /// Does nothing if capacity is greater than `additional`.
+    /// Does nothing if capacity is already sufficient.
     ///
     /// See [`Vec::reserve_exact`] for additional notes.
     ///
