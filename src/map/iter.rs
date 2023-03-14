@@ -83,6 +83,24 @@ impl<K: AsRef<str>, V> IntoIterator for super::PrefixArray<K, V> {
     }
 }
 
+impl<'a, K: AsRef<str>, V> IntoIterator for &'a super::PrefixArray<K, V> {
+    type Item = (&'a K, &'a V);
+    type IntoIter = Iter<'a, K, V>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+impl<'a, K: AsRef<str>, V> IntoIterator for &'a mut super::PrefixArray<K, V> {
+    type Item = (&'a K, &'a mut V);
+    type IntoIter = IterMut<'a, K, V>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter_mut()
+    }
+}
+
 impl<K: AsRef<str>, V> core::iter::FromIterator<(K, V)> for super::PrefixArray<K, V> {
     fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
         Self::from_vec_lossy(iter.into_iter().collect())
