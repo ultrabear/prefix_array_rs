@@ -233,7 +233,7 @@ impl<K: AsRef<str>> SetSubSlice<K> {
     where
         K: Clone,
     {
-        self.0.to_vec().into_iter().map(|(k, _)| k).collect()
+        self.0.iter().map(|(k, _)| k.clone()).collect()
     }
 
     /// Returns the `SetSubSlice` where all `K` have the same prefix `prefix`.
