@@ -15,6 +15,12 @@ impl<K: AsRef<str>, V> Iterator for IntoIter<K, V> {
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.0.size_hint()
     }
+
+    fn count(self) -> usize {
+        self.0.count()
+    }
+
+    // TODO impl advance_by when feature(iter_advance_by) is stabilized
 }
 
 impl<K: AsRef<str>, V> FusedIterator for IntoIter<K, V> {}
@@ -39,6 +45,12 @@ impl<'a, K: AsRef<str>, V> Iterator for Iter<'a, K, V> {
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.0.size_hint()
     }
+
+    fn count(self) -> usize {
+        self.0.count()
+    }
+
+    // TODO impl advance_by when feature(iter_advance_by) is stabilized
 }
 
 impl<'a, K: AsRef<str>, V> FusedIterator for Iter<'a, K, V> {}
@@ -63,6 +75,12 @@ impl<'a, K: AsRef<str>, V> Iterator for IterMut<'a, K, V> {
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.0.size_hint()
     }
+
+    fn count(self) -> usize {
+        self.0.count()
+    }
+
+    // TODO impl advance_by when feature(iter_advance_by) is stabilized
 }
 
 impl<'a, K: AsRef<str>, V> FusedIterator for IterMut<'a, K, V> {}
