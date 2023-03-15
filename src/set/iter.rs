@@ -15,6 +15,12 @@ impl<K: AsRef<str>> Iterator for IntoIter<K> {
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.0.size_hint()
     }
+
+    fn count(self) -> usize {
+        self.0.count()
+    }
+
+    // TODO impl advance_by when feature(iter_advance_by) is stabilized
 }
 
 impl<K: AsRef<str>> FusedIterator for IntoIter<K> {}
@@ -39,6 +45,12 @@ impl<'a, K: AsRef<str>> Iterator for Iter<'a, K> {
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.0.size_hint()
     }
+
+    fn count(self) -> usize {
+        self.0.count()
+    }
+
+    // TODO impl advance_by when feature(iter_advance_by) is stabilized
 }
 
 impl<'a, K: AsRef<str>> FusedIterator for Iter<'a, K> {}
