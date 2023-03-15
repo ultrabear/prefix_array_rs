@@ -70,6 +70,8 @@ impl<T> InsertMany<T> for Vec<T> {
             let mut written_to = new_len;
 
             for (idx, t) in insert.into_iter().rev() {
+                // idx will never be greater than original_len because we sorted and checked the max value
+                // this relies on TrustedOrd with usize, but that must be true
                 insert_left -= 1;
 
                 let my_idx = insert_left + idx;
@@ -77,16 +79,30 @@ impl<T> InsertMany<T> for Vec<T> {
                 // PRECOND: use *mut for stacked borrows compliance
                 let v_ptr = (raw_vec as *mut [MaybeUninit<T>]).cast::<MaybeUninit<T>>();
 
-                // SAFETY: my_idx is less than new_len (our max capacity) because we reserved at least enough,
-                // so written_to(bounded<=new_len) (-(my_idx + 1) cancels out +my_idx+1) is always writable
-                // we must move the memory greater than idx but lower than the previously placed value up
-                // we move written_to - (my_idx + 1) values as we want to fill the data starting after my_idx and before the last written to point, this might turn out as 0
-                unsafe {
-                    ptr::copy(
-                        v_ptr.add(idx) as *const _,
-                        v_ptr.add(my_idx + 1),
-                        written_to - (my_idx + 1),
-                    );
+                // we need this check, because if it happens to be 0, my_idx+1 could be out of bounds (and violate the safety contract of copy)
+                if (written_to - (my_idx + 1)) != 0 {
+                    // Final preflight checks
+                    debug_assert!(my_idx + 1 < new_len);
+                    debug_assert!(written_to <= new_len);
+                    debug_assert!(idx < new_len);
+
+                    // SAFETY: my_idx is less than new_len (our max capacity) because we reserved at least enough,
+                    // so written_to(bounded<=new_len) (-(my_idx + 1) cancels out +my_idx+1) is always writable
+                    // we must move the memory greater than idx but lower than the previously placed value up
+                    // we move written_to - (my_idx + 1) values as we want to fill the data starting after my_idx
+                    // and before the last written to point
+                    //
+                    // This is safe because even if at some point the raw bytes of a T exists twice, it will eventually be overwritten by extra writes
+                    // if any panics occur, recall that we set length to 0, so memory will be leaked instead of causing UB
+                    //
+                    // We use copy here and NOT copy_nonoverlapping intentionally, as the two regions may overlap
+                    unsafe {
+                        ptr::copy(
+                            v_ptr.add(idx) as *const _,
+                            v_ptr.add(my_idx + 1),
+                            written_to - (my_idx + 1),
+                        );
+                    }
                 }
 
                 // write our special little value to its special little index
