@@ -83,26 +83,52 @@ impl<K: AsRef<str>, V> IntoIterator for super::PrefixArray<K, V> {
     }
 }
 
-impl<'a, K: AsRef<str>, V> IntoIterator for &'a super::PrefixArray<K, V> {
-    type Item = (&'a K, &'a V);
-    type IntoIter = Iter<'a, K, V>;
+macro_rules! into_iter_gen {
+    (for $t:ty where Item = $item:ty, IntoIter = $into_iter:ty, do $code:tt ) => {
+        impl<'a, K: AsRef<str>, V> IntoIterator for $t {
+            type Item = $item;
+            type IntoIter = $into_iter;
 
-    fn into_iter(self) -> Self::IntoIter {
-        self.iter()
-    }
+            fn into_iter(self) -> Self::IntoIter {
+                self.$code()
+            }
+        }
+    };
 }
 
-impl<'a, K: AsRef<str>, V> IntoIterator for &'a mut super::PrefixArray<K, V> {
-    type Item = (&'a K, &'a mut V);
-    type IntoIter = IterMut<'a, K, V>;
+into_iter_gen!(for &'a super::PrefixArray<K, V> where Item = (&'a K, &'a V), IntoIter = Iter<'a, K, V>, do iter);
+into_iter_gen!(for &'a mut super::PrefixArray<K, V> where Item = (&'a K, &'a mut V), IntoIter = IterMut<'a, K, V>, do iter_mut);
 
-    fn into_iter(self) -> Self::IntoIter {
-        self.iter_mut()
-    }
-}
+into_iter_gen!(for &'a super::SubSlice<K, V> where Item = (&'a K, &'a V), IntoIter = Iter<'a, K, V>, do iter);
+into_iter_gen!(for &'a mut super::SubSlice<K, V> where Item = (&'a K, &'a mut V), IntoIter = IterMut<'a, K, V>, do iter_mut);
 
 impl<K: AsRef<str>, V> core::iter::FromIterator<(K, V)> for super::PrefixArray<K, V> {
     fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
         Self::from_vec_lossy(iter.into_iter().collect())
     }
+}
+
+#[test]
+fn is_into_iter() {
+    let mut parr = super::PrefixArray::from_iter([("among", 2i32), ("we", 4)]);
+
+    for (_, v) in &mut parr {
+        *v += 1;
+    }
+
+    let mut sum = 0;
+
+    for (_, v) in &parr {
+        sum += v;
+    }
+
+    assert_eq!(sum, 8);
+
+    for (_, v) in parr.find_all_with_prefix_mut("amon") {
+        *v += 1;
+    }
+
+    assert_eq!(parr.get("among"), Some(&4));
+
+    drop(parr);
 }
