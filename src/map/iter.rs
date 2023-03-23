@@ -26,18 +26,22 @@ pub struct IntoIter<K: AsRef<str>, V>(alloc::vec::IntoIter<(K, V)>);
 impl<K: AsRef<str>, V> Iterator for IntoIter<K, V> {
     type Item = (K, V);
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next()
     }
 
+    #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.0.size_hint()
     }
 
+    #[inline]
     fn count(self) -> usize {
         self.0.count()
     }
 
+    // TODO impl next_chunk when feature(iter_next_chunk) is stabilized
     // TODO impl advance_by when feature(iter_advance_by) is stabilized
 }
 
@@ -46,6 +50,7 @@ impl<K: AsRef<str>, V> FusedIterator for IntoIter<K, V> {}
 impl<K: AsRef<str>, V> ExactSizeIterator for IntoIter<K, V> {}
 
 impl<K: AsRef<str>, V> DoubleEndedIterator for IntoIter<K, V> {
+    #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         self.0.next_back()
     }
@@ -57,18 +62,22 @@ pub struct Iter<'a, K: AsRef<str>, V>(pub(super) core::slice::Iter<'a, (K, V)>);
 impl<'a, K: AsRef<str>, V> Iterator for Iter<'a, K, V> {
     type Item = (&'a K, &'a V);
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next().map(|(k, v)| (k, v))
     }
 
+    #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.0.size_hint()
     }
 
+    #[inline]
     fn count(self) -> usize {
         self.0.count()
     }
 
+    // TODO impl next_chunk when feature(iter_next_chunk) is stabilized
     // TODO impl advance_by when feature(iter_advance_by) is stabilized
 }
 
@@ -77,6 +86,7 @@ impl<'a, K: AsRef<str>, V> FusedIterator for Iter<'a, K, V> {}
 impl<'a, K: AsRef<str>, V> ExactSizeIterator for Iter<'a, K, V> {}
 
 impl<'a, K: AsRef<str>, V> DoubleEndedIterator for Iter<'a, K, V> {
+    #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         self.0.next_back().map(|(k, v)| (k, v))
     }
@@ -88,18 +98,22 @@ pub struct IterMut<'a, K: AsRef<str>, V>(pub(super) core::slice::IterMut<'a, (K,
 impl<'a, K: AsRef<str>, V> Iterator for IterMut<'a, K, V> {
     type Item = (&'a K, &'a mut V);
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next().map(|(k, v)| (&*k, v))
     }
 
+    #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.0.size_hint()
     }
 
+    #[inline]
     fn count(self) -> usize {
         self.0.count()
     }
 
+    // TODO impl next_chunk when feature(iter_next_chunk) is stabilized
     // TODO impl advance_by when feature(iter_advance_by) is stabilized
 }
 
@@ -108,6 +122,7 @@ impl<'a, K: AsRef<str>, V> FusedIterator for IterMut<'a, K, V> {}
 impl<'a, K: AsRef<str>, V> ExactSizeIterator for IterMut<'a, K, V> {}
 
 impl<'a, K: AsRef<str>, V> DoubleEndedIterator for IterMut<'a, K, V> {
+    #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         self.0.next_back().map(|(k, v)| (&*k, v))
     }
