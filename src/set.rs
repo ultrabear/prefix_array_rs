@@ -10,7 +10,7 @@ use core::ops::Deref;
 use ref_cast::{ref_cast_custom, RefCastCustom};
 
 mod iter;
-pub use iter::{IntoIter, Iter};
+pub use iter::{Drain, IntoIter, Iter};
 
 use super::map;
 
@@ -112,11 +112,16 @@ impl<K: AsRef<str>> PrefixArraySet<K> {
     /// Removes all values with the prefix provided, shifting the array in the process to account for the empty space.
     ///
     /// This operation is `O(n)`.
-    pub fn drain_all_with_prefix<'a>(
-        &'a mut self,
-        prefix: &str,
-    ) -> impl Iterator<Item = K> + ExactSizeIterator + DoubleEndedIterator + 'a {
-        self.0.drain_all_with_prefix(prefix).map(|(k, _)| k)
+    pub fn drain_all_with_prefix<'a>(&'a mut self, prefix: &str) -> Drain<'a, K> {
+        Drain(self.0.drain_all_with_prefix(prefix))
+    }
+
+    /// Drains all elements of the [`PrefixArraySet`], returning them in an iterator.
+    /// Keeps the backing allocation intact, unlike [`IntoIter`].
+    ///
+    /// When this iterator is dropped it drops all remaining elements.
+    pub fn drain(&mut self) -> Drain<K> {
+        Drain(self.0.drain())
     }
 
     /// Removes the value that matches the given key, returning true if it was present in the set
