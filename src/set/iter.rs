@@ -8,18 +8,22 @@ pub struct IntoIter<K: AsRef<str>>(crate::map::IntoIter<K, ()>);
 impl<K: AsRef<str>> Iterator for IntoIter<K> {
     type Item = K;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next().map(|(k, _)| k)
     }
 
+    #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.0.size_hint()
     }
 
+    #[inline]
     fn count(self) -> usize {
         self.0.count()
     }
 
+    // TODO impl next_chunk when feature(iter_next_chunk) is stabilized
     // TODO impl advance_by when feature(iter_advance_by) is stabilized
 }
 
@@ -27,6 +31,7 @@ impl<K: AsRef<str>> FusedIterator for IntoIter<K> {}
 impl<K: AsRef<str>> ExactSizeIterator for IntoIter<K> {}
 
 impl<K: AsRef<str>> DoubleEndedIterator for IntoIter<K> {
+    #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         self.0.next_back().map(|(k, _)| k)
     }
@@ -38,18 +43,22 @@ pub struct Iter<'a, K: AsRef<str>>(pub(super) crate::map::Iter<'a, K, ()>);
 impl<'a, K: AsRef<str>> Iterator for Iter<'a, K> {
     type Item = &'a K;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next().map(|(k, _)| k)
     }
 
+    #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.0.size_hint()
     }
 
+    #[inline]
     fn count(self) -> usize {
         self.0.count()
     }
 
+    // TODO impl next_chunk when feature(iter_next_chunk) is stabilized
     // TODO impl advance_by when feature(iter_advance_by) is stabilized
 }
 
@@ -57,6 +66,7 @@ impl<'a, K: AsRef<str>> FusedIterator for Iter<'a, K> {}
 impl<'a, K: AsRef<str>> ExactSizeIterator for Iter<'a, K> {}
 
 impl<'a, K: AsRef<str>> DoubleEndedIterator for Iter<'a, K> {
+    #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         self.0.next_back().map(|(k, _)| k)
     }
