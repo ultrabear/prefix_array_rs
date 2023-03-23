@@ -2,6 +2,24 @@ extern crate alloc;
 
 use core::iter::FusedIterator;
 
+// TODO: impl TrustedLen when it becomes stable
+
+const fn is_double_ended<T: DoubleEndedIterator>() {}
+const fn is_fused<T: FusedIterator>() {}
+const fn is_exactsize<T: ExactSizeIterator>() {}
+
+// Asserts that the iterator type is Fused, DoubleEnded, and ExactSize
+macro_rules! assert_ty {
+    ($t:ty) => {
+        #[allow(unused)]
+        const _: () = {
+            is_double_ended::<$t>();
+            is_fused::<$t>();
+            is_exactsize::<$t>();
+        };
+    };
+}
+
 /// Consuming Iterator from a [`PrefixArray`][super::PrefixArray]
 pub struct IntoIter<K: AsRef<str>, V>(alloc::vec::IntoIter<(K, V)>);
 
@@ -23,6 +41,7 @@ impl<K: AsRef<str>, V> Iterator for IntoIter<K, V> {
     // TODO impl advance_by when feature(iter_advance_by) is stabilized
 }
 
+assert_ty!(alloc::vec::IntoIter<()>);
 impl<K: AsRef<str>, V> FusedIterator for IntoIter<K, V> {}
 impl<K: AsRef<str>, V> ExactSizeIterator for IntoIter<K, V> {}
 
@@ -53,6 +72,7 @@ impl<'a, K: AsRef<str>, V> Iterator for Iter<'a, K, V> {
     // TODO impl advance_by when feature(iter_advance_by) is stabilized
 }
 
+assert_ty!(core::slice::Iter<'_, ()>);
 impl<'a, K: AsRef<str>, V> FusedIterator for Iter<'a, K, V> {}
 impl<'a, K: AsRef<str>, V> ExactSizeIterator for Iter<'a, K, V> {}
 
@@ -83,6 +103,7 @@ impl<'a, K: AsRef<str>, V> Iterator for IterMut<'a, K, V> {
     // TODO impl advance_by when feature(iter_advance_by) is stabilized
 }
 
+assert_ty!(core::slice::IterMut<'_, ()>);
 impl<'a, K: AsRef<str>, V> FusedIterator for IterMut<'a, K, V> {}
 impl<'a, K: AsRef<str>, V> ExactSizeIterator for IterMut<'a, K, V> {}
 
