@@ -72,6 +72,42 @@ impl<'a, K: AsRef<str>> DoubleEndedIterator for Iter<'a, K> {
     }
 }
 
+/// A Draining Iterator of some or all elements of a [`PrefixArraySet`][super::PrefixArraySet].
+///  Holds a mutable reference to the parent `PrefixArraySet`
+pub struct Drain<'a, K: AsRef<str>>(pub(super) crate::map::Drain<'a, K, ()>);
+
+impl<'a, K: AsRef<str>> Iterator for Drain<'a, K> {
+    type Item = K;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(|(k, _)| k)
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
+    }
+
+    #[inline]
+    fn count(self) -> usize {
+        self.0.count()
+    }
+
+    // TODO impl next_chunk when feature(iter_next_chunk) is stabilized
+    // TODO impl advance_by when feature(iter_advance_by) is stabilized
+}
+
+impl<'a, K: AsRef<str>> FusedIterator for Drain<'a, K> {}
+impl<'a, K: AsRef<str>> ExactSizeIterator for Drain<'a, K> {}
+
+impl<'a, K: AsRef<str>> DoubleEndedIterator for Drain<'a, K> {
+    #[inline]
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.0.next_back().map(|(k, _)| k)
+    }
+}
+
 impl<K: AsRef<str>> IntoIterator for super::PrefixArraySet<K> {
     type Item = K;
     type IntoIter = IntoIter<K>;
