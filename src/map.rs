@@ -15,7 +15,7 @@ use ref_cast::{ref_cast_custom, RefCastCustom};
 mod vec_ext;
 use vec_ext::InsertMany;
 mod iter;
-pub use iter::{IntoIter, Iter, IterMut};
+pub use iter::{Drain, IntoIter, Iter, IterMut};
 
 /// A generic search-by-prefix array designed to find strings with common prefixes in `O(log n)` time, and easily search on subslices to refine a previous search.
 ///
@@ -108,13 +108,18 @@ impl<K: AsRef<str>, V> PrefixArray<K, V> {
     /// Removes all values with the prefix provided, shifting the array in the process to account for the empty space.
     ///
     /// This operation is `O(n)`.
-    pub fn drain_all_with_prefix<'a>(
-        &'a mut self,
-        prefix: &str,
-    ) -> impl Iterator<Item = (K, V)> + ExactSizeIterator + DoubleEndedIterator + 'a {
+    pub fn drain_all_with_prefix<'a>(&'a mut self, prefix: &str) -> Drain<'a, K, V> {
         let range = self.find_all_with_prefix_idx(prefix);
 
-        self.0.drain(range)
+        Drain(self.0.drain(range))
+    }
+
+    /// Drains all elements of the [`PrefixArray`], returning them in an iterator.
+    /// Keeps the backing allocation intact, unlike [`IntoIter`].
+    ///
+    /// When this iterator is dropped it drops all remaining elements.
+    pub fn drain(&mut self) -> Drain<K, V> {
+        Drain(self.0.drain(..))
     }
 
     /// Removes the value that matches the given key and returns it,

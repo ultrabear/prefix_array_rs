@@ -129,6 +129,42 @@ impl<'a, K: AsRef<str>, V> DoubleEndedIterator for IterMut<'a, K, V> {
     }
 }
 
+/// A Draining Iterator of some or all elements of a [`PrefixArray`][super::PrefixArray].
+///  Holds a mutable reference to the parent `PrefixArray`
+pub struct Drain<'a, K: AsRef<str>, V>(pub(super) alloc::vec::Drain<'a, (K, V)>);
+
+impl<'a, K: AsRef<str>, V> Iterator for Drain<'a, K, V> {
+    type Item = (K, V);
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next()
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
+    }
+
+    #[inline]
+    fn count(self) -> usize {
+        self.0.count()
+    }
+    // TODO impl next_chunk when feature(iter_next_chunk) is stabilized
+    // TODO impl advance_by when feature(iter_advance_by) is stabilized
+}
+
+assert_ty!(alloc::vec::Drain<'_, ()>);
+impl<'a, K: AsRef<str>, V> FusedIterator for Drain<'a, K, V> {}
+impl<'a, K: AsRef<str>, V> ExactSizeIterator for Drain<'a, K, V> {}
+
+impl<'a, K: AsRef<str>, V> DoubleEndedIterator for Drain<'a, K, V> {
+    #[inline]
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.0.next_back()
+    }
+}
+
 impl<K: AsRef<str>, V> IntoIterator for super::PrefixArray<K, V> {
     type Item = (K, V);
     type IntoIter = IntoIter<K, V>;
