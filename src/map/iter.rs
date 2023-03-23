@@ -8,6 +8,7 @@ const fn is_double_ended<T: DoubleEndedIterator>() {}
 const fn is_fused<T: FusedIterator>() {}
 const fn is_exactsize<T: ExactSizeIterator>() {}
 
+// we dont repeat this code to `set/iter.rs` because those iterators point here and we know we impl the traits
 // Asserts that the iterator type is Fused, DoubleEnded, and ExactSize
 macro_rules! assert_ty {
     ($t:ty) => {
