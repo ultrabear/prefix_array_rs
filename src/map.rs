@@ -355,6 +355,7 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
     }
 
     /// Compute the common prefix of this [`SubSlice`] from the data.
+    /// Will return an empty string if this subslice is empty.
     ///
     /// Note that this may be more specific than what was searched for, i/e:
     /// ```rust
