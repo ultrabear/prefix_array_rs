@@ -323,7 +323,7 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
             }
         }) {
             let min =
-                self.as_slice()[..=start].partition_point(|s| !s.0.as_ref().starts_with(prefix));
+                self.as_slice()[..start].partition_point(|s| !s.0.as_ref().starts_with(prefix));
             let max = self.as_slice()[start..]
                 .partition_point(|s| s.0.as_ref().starts_with(prefix))
                 + start;
