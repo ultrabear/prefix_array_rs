@@ -20,6 +20,13 @@ pub fn benchy(c: &mut Criterion) {
     c.bench_function("find_with_prefix_2^20-trie", |b| {
         b.iter(|| black_box(trie.get_raw_descendant(black_box("6"))))
     });
+
+    let arr2 = arr.find_all_with_prefix("6543").to_owned();
+    let mut arr3 = PrefixArraySet::new();
+
+    c.bench_function("clone_native", |b| b.iter(|| black_box(arr2.clone())));
+
+    c.bench_function("clone_from", |b| b.iter(|| arr3.clone_from(&arr2)));
 }
 
 criterion_group!(benches, benchy);
