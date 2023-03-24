@@ -25,8 +25,19 @@ pub use iter::{Drain, IntoIter, Iter, IterMut};
 ///
 /// The main downside of a [`PrefixArray`] over a trie type datastructure is that insertions have a significant `O(n)` cost,
 /// so if you are adding multiple values over the lifetime of the [`PrefixArray`] it may become less efficient overall than a traditional tree
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct PrefixArray<K: AsRef<str>, V>(pub(crate) Vec<(K, V)>);
+
+// Manually impl to get clone_from
+impl<K: AsRef<str> + Clone, V: Clone> Clone for PrefixArray<K, V> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+
+    fn clone_from(&mut self, other: &Self) {
+        self.0.clone_from(&other.0)
+    }
+}
 
 impl<K: AsRef<str>, V> Default for PrefixArray<K, V> {
     fn default() -> Self {

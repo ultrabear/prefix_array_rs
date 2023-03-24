@@ -22,8 +22,19 @@ use super::map;
 ///
 /// The main downside of a [`PrefixArraySet`] over a trie type datastructure is that insertions have a significant `O(n)` cost,
 /// so if you are adding multiple values over the lifetime of the [`PrefixArraySet`] it may become less efficient overall than a traditional tree
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct PrefixArraySet<K: AsRef<str>>(map::PrefixArray<K, ()>);
+
+// Manually impl to get clone_from
+impl<K: AsRef<str> + Clone> Clone for PrefixArraySet<K> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+
+    fn clone_from(&mut self, other: &Self) {
+        self.0.clone_from(&other.0)
+    }
+}
 
 impl<K: AsRef<str>> Default for PrefixArraySet<K> {
     fn default() -> Self {
