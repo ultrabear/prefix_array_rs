@@ -360,7 +360,7 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
     /// ```rust
     /// # use prefix_array::PrefixArray;
     /// let arr = PrefixArray::from_iter([("abcde", 0), ("abcdef", 1)]);
-    /// // Common prefix is computed, so even though we only
+    /// // Common prefix is *computed*, so even though we only
     /// //  searched for "a" we got something more specific
     /// assert_eq!(arr.find_all_with_prefix("a").common_prefix(), "abcde");
     /// ```
