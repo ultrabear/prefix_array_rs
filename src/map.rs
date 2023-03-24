@@ -35,7 +35,7 @@ impl<K: AsRef<str> + Clone, V: Clone> Clone for PrefixArray<K, V> {
     }
 
     fn clone_from(&mut self, other: &Self) {
-        self.0.clone_from(&other.0)
+        self.0.clone_from(&other.0);
     }
 }
 

@@ -32,7 +32,7 @@ impl<K: AsRef<str> + Clone> Clone for PrefixArraySet<K> {
     }
 
     fn clone_from(&mut self, other: &Self) {
-        self.0.clone_from(&other.0)
+        self.0.clone_from(&other.0);
     }
 }
 
