@@ -356,20 +356,37 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
 
     /// Compute the common prefix of this [`SubSlice`] from the data.
     ///
+    /// Note that this may be more specific than what was searched for, i/e:
+    /// ```rust
+    /// # use prefix_array::PrefixArray;
+    /// let arr = PrefixArray::from_iter([("abcde", 0), ("abcdef", 1)]);
+    /// // Common prefix is computed, so even though we only
+    /// //  searched for "a" we got something more specific
+    /// assert_eq!(arr.find_all_with_prefix("a").common_prefix(), "abcde");
+    /// ```
+    ///
     /// This operation is `O(1)`, but it is not computationally free.
     pub fn common_prefix(&self) -> &str {
         let Some(first) = self.as_slice().first().map(|s| s.0.as_ref()) else { return ""; };
 
         let Some(last) = self.as_slice().last().map(|s| s.0.as_ref()) else { return "" };
 
-        let mut chars = first.chars();
+        let last_idx = first.len().min(last.len());
 
-        while !last.starts_with(chars.as_str()) {
-            // remove last elem
-            chars.next_back();
+        let mut end_idx = 0;
+
+        for ((idx, fch), lch) in first
+            .char_indices()
+            .zip(last.chars())
+            .chain([((last_idx, ' '), ' ')])
+        {
+            end_idx = idx;
+            if fch != lch {
+                break;
+            }
         }
 
-        chars.as_str()
+        &first[..end_idx]
     }
 
     /// Returns whether this [`SubSlice`] contains the given key
@@ -449,6 +466,8 @@ mod test {
 
         *v.get_mut("among").unwrap() = 24;
 
+        assert_eq!(v.common_prefix(), "");
+
         assert_eq!(Some(&24), v.get("among"));
 
         assert_eq!(v.remove_entry("among"), Some(("among", 24)));
@@ -458,6 +477,8 @@ mod test {
         v.extend([("amongus", 324), ("asdfsaf", 234)]);
 
         assert_eq!(v.len(), 3);
+
+        assert_eq!(v.find_all_with_prefix("a").common_prefix(), "a");
 
         v.extend([("0", 324), ("01", 234)]);
 
