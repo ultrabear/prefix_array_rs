@@ -271,6 +271,15 @@ impl<K: AsRef<str>> SetSubSlice<K> {
 
     /// Compute the common prefix of this [`SetSubSlice`] from the data.
     ///
+    /// Note that this may be more specific than what was searched for, i/e:
+    /// ```rust
+    /// # use prefix_array::PrefixArraySet;
+    /// let arr = PrefixArraySet::from_iter(["12346", "12345", "12341"]);
+    /// // Common prefix is computed, so even though we only
+    /// //  searched for "12" we got something more specific
+    /// assert_eq!(arr.find_all_with_prefix("12").common_prefix(), "1234");
+    /// ```
+    ///
     /// This operation is `O(1)`, but it is not computationally free.
     pub fn common_prefix(&self) -> &str {
         self.0.common_prefix()
