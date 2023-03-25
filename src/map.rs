@@ -502,5 +502,10 @@ mod test {
         assert_eq!(v.len(), 5);
 
         v.assert_invariants();
+
+        v.extend(Some(("0", 12)));
+
+        // extend should overwrite values
+        assert_eq!(v.get("0"), Some(&12));
     }
 }
