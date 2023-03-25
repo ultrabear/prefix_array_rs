@@ -393,7 +393,7 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
     /// Returns whether this [`SubSlice`] contains the given key
     ///
     /// This operation is `O(log n)`.
-    pub fn contains(&self, key: &str) -> bool {
+    pub fn contains_key(&self, key: &str) -> bool {
         self.as_slice()
             .binary_search_by_key(&key, |s| s.0.as_ref())
             .is_ok()

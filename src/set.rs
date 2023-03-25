@@ -290,7 +290,7 @@ impl<K: AsRef<str>> SetSubSlice<K> {
     ///
     /// This operation is `O(log n)`.
     pub fn contains(&self, key: &str) -> bool {
-        self.0.contains(key)
+        self.0.contains_key(key)
     }
 
     /// Returns whether this [`SetSubSlice`] is empty
