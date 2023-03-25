@@ -429,7 +429,7 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
         match self.0.binary_search_by_key(&key, |s| s.0.as_ref()) {
             Ok(idx) => Some({
                 let (k, v) = &self.0[idx];
-                (&k, &v)
+                (k, v)
             }),
             Err(_) => None,
         }
