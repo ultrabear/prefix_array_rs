@@ -419,6 +419,19 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
         }
     }
 
+    /// Returns the key value pair corresponding to the given key.
+    ///
+    /// This operation is `O(log n)`.
+    pub fn get_key_value(&self, key: &str) -> Option<(&K, &V)> {
+        match self.0.binary_search_by_key(&key, |s| s.0.as_ref()) {
+            Ok(idx) => Some({
+                let (k, v) = &self.0[idx];
+                (&k, &v)
+            }),
+            Err(_) => None,
+        }
+    }
+
     /// An iterator visiting all key value pairs in sorted-by-key order, with mutable references to the values.
     pub fn iter_mut(&mut self) -> IterMut<K, V> {
         IterMut(self.0.iter_mut())
