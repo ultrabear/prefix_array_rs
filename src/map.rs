@@ -182,27 +182,30 @@ impl<K: AsRef<str>, V> PrefixArray<K, V> {
 }
 
 impl<K: AsRef<str>, V> Extend<(K, V)> for PrefixArray<K, V> {
-    /// Extends the [`PrefixArray`] with more values, skipping any duplicates.
+    /// Extends the [`PrefixArray`] with more values, overwriting any duplicate keys in the map.
     ///
     /// This operation is `O(n + k log k)` where k is the number of elements in the iterator.
     fn extend<T>(&mut self, iter: T)
     where
         T: IntoIterator<Item = (K, V)>,
     {
-        let mut extra = iter
-            .into_iter()
-            .filter_map(|k| {
-                self.0
-                    .binary_search_by_key(&k.0.as_ref(), |s| s.0.as_ref())
-                    .err()
-                    .map(|idx| (idx, k))
-            })
-            .collect::<Vec<(usize, (K, V))>>();
+        let mut insert = Vec::new();
+
+        for k in iter {
+            match self.0.binary_search_by_key(&k.0.as_ref(), |s| s.0.as_ref()) {
+                // add to insertion set
+                Err(idx) => insert.push((idx, k)),
+                // replace old value
+                Ok(idx) => {
+                    self.0[idx] = k;
+                }
+            }
+        }
 
         // presort by string so that identical indexes are mapped correctly
-        extra.sort_unstable_by(|(_, a), (_, b)| a.0.as_ref().cmp(b.0.as_ref()));
+        insert.sort_unstable_by(|(_, a), (_, b)| a.0.as_ref().cmp(b.0.as_ref()));
 
-        self.0.insert_many(extra);
+        self.0.insert_many(insert);
     }
 }
 
