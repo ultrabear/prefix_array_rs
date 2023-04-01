@@ -218,6 +218,10 @@ impl<K: AsRef<str> + Clone> ToOwned for SetSubSlice<K> {
         // here we can assert the invariants were upheld
         PrefixArraySet(map::PrefixArray(self.0.to_vec()))
     }
+
+    fn clone_into(&self, target: &mut PrefixArraySet<K>) {
+        self.0.clone_into(&mut target.0)
+    }
 }
 
 /// A subslice of a [`PrefixArraySet`] in which all items contain a common prefix (which may be the unit prefix `""`).

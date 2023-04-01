@@ -254,6 +254,10 @@ impl<K: AsRef<str> + Clone, V: Clone> ToOwned for SubSlice<K, V> {
         // here we can assert the invariants were upheld
         PrefixArray(self.to_vec())
     }
+
+    fn clone_into(&self, target: &mut PrefixArray<K, V>) {
+        self.0.clone_into(&mut target.0)
+    }
 }
 
 /// A [`SubSlice`] of a [`PrefixArray`] in which all items contain a common prefix (which may be the unit prefix `""`).
