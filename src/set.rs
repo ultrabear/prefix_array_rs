@@ -103,15 +103,14 @@ impl<K: AsRef<str>> PrefixArraySet<K> {
 
     /// Adds a value to the set, replacing the existing value, if any, that is equal to the given one.  
     /// Returns the replaced value.
-    pub fn replace(&mut self, mut key: K) -> Option<K> {
+    pub fn replace(&mut self, key: K) -> Option<K> {
         // This functionality is not available in the HashMap api so we will make it ourself
         match (self.0)
             .0
             .binary_search_by_key(&key.as_ref(), |s| s.0.as_ref())
         {
             Ok(idx) => {
-                core::mem::swap(&mut (self.0).0[idx].0, &mut key);
-                Some(key)
+                Some(core::mem::replace(&mut (self.0).0[idx].0, key))
             }
             Err(idx) => {
                 (self.0).0.insert(idx, (key, ()));
