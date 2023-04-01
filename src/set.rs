@@ -109,9 +109,7 @@ impl<K: AsRef<str>> PrefixArraySet<K> {
             .0
             .binary_search_by_key(&key.as_ref(), |s| s.0.as_ref())
         {
-            Ok(idx) => {
-                Some(core::mem::replace(&mut (self.0).0[idx].0, key))
-            }
+            Ok(idx) => Some(core::mem::replace(&mut (self.0).0[idx].0, key)),
             Err(idx) => {
                 (self.0).0.insert(idx, (key, ()));
                 None
@@ -248,7 +246,7 @@ impl<K: AsRef<str>> SetSubSlice<K> {
     where
         K: Clone,
     {
-        self.0.iter().map(|(k, _)| k.clone()).collect()
+        (self.0).0.iter().map(|(k, _)| k.clone()).collect()
     }
 
     /// Returns the `SetSubSlice` where all `K` have the same prefix `prefix`.

@@ -261,7 +261,7 @@ impl<K: AsRef<str> + Clone, V: Clone> ToOwned for SubSlice<K, V> {
 /// The [`SubSlice`] does not store what that common prefix is for performance reasons, it is up to the user to keep track of.
 #[derive(RefCastCustom, Debug)]
 #[repr(transparent)]
-pub struct SubSlice<K: AsRef<str>, V>([(K, V)]);
+pub struct SubSlice<K: AsRef<str>, V>(pub(crate) [(K, V)]);
 
 impl<K: AsRef<str>, V> SubSlice<K, V> {
     // ref cast needs that unsafe block
