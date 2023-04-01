@@ -220,7 +220,7 @@ impl<K: AsRef<str> + Clone> ToOwned for SetSubSlice<K> {
     }
 
     fn clone_into(&self, target: &mut PrefixArraySet<K>) {
-        self.0.clone_into(&mut target.0)
+        self.0.clone_into(&mut target.0);
     }
 }
 
