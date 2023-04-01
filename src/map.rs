@@ -512,4 +512,20 @@ mod test {
         // extend should overwrite values
         assert_eq!(v.get("0"), Some(&12));
     }
+
+    #[test]
+    fn weird_lifetimes() {
+        let v = PrefixArray::from_iter([("we".to_owned(), 1), ("woo".into(), 2)]);
+
+        let res: &i32;
+
+        {
+            let s = "we".to_owned();
+            // ensure get(&self, &str) -> Option<&V> elides properly
+            res = v.get(&s).unwrap();
+            drop(s);
+        }
+
+        assert_eq!(res, &1);
+    }
 }
