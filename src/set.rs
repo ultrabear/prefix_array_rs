@@ -7,7 +7,6 @@ extern crate alloc;
 
 use alloc::{borrow::ToOwned, vec::Vec};
 use core::ops::Deref;
-use ref_cast::{ref_cast_custom, RefCastCustom};
 
 mod iter;
 pub use iter::{Drain, IntoIter, Iter};
@@ -227,17 +226,19 @@ impl<K: AsRef<str> + Clone> ToOwned for SetSubSlice<K> {
 /// A subslice of a [`PrefixArraySet`] in which all items contain a common prefix (which may be the unit prefix `""`).
 ///
 /// The [`SetSubSlice`] does not store what that common prefix is for performance reasons (but it can be computed, see: [`SetSubSlice::common_prefix`]), it is up to the user to keep track of.
-#[derive(RefCastCustom, Debug)]
+#[derive(Debug)]
+// SAFETY: this type must remain repr(transparent) to map::SubSlice<K, ()> for from_map_slice invariants
 #[repr(transparent)]
 pub struct SetSubSlice<K: AsRef<str>>(map::SubSlice<K, ()>);
 
 impl<K: AsRef<str>> SetSubSlice<K> {
-    // ref-cast needs the unsafe
+    /// creates a ref to Self from a ref to backing storage
+    // bypass lint level
     #[allow(unsafe_code)]
-    #[ref_cast_custom]
-    // ref-cast ensures this is safe for us, be quiet clippy
-    #[allow(clippy::transmute_ptr_to_ptr)]
-    fn from_map_slice<'a>(v: &'a map::SubSlice<K, ()>) -> &'a Self;
+    fn from_map_slice(v: &map::SubSlice<K, ()>) -> &Self {
+        // SAFETY: this type is repr(transparent), and the lifetimes are both &'a
+        unsafe { &*(v as *const map::SubSlice<K, ()> as *const SetSubSlice<K>) }
+    }
 
     /// Returns an iterator over all of the elements of this [`SetSubSlice`]
     pub fn iter(&self) -> Iter<K> {

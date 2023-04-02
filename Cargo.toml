@@ -26,4 +26,3 @@ default = ["std"]
 std = []
 
 [dependencies]
-ref-cast = "1.0.15"

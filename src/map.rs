@@ -10,7 +10,6 @@ use core::{
     cmp::Ordering,
     ops::{Deref, DerefMut},
 };
-use ref_cast::{ref_cast_custom, RefCastCustom};
 
 mod vec_ext;
 use vec_ext::InsertMany;
@@ -263,24 +262,27 @@ impl<K: AsRef<str> + Clone, V: Clone> ToOwned for SubSlice<K, V> {
 /// A [`SubSlice`] of a [`PrefixArray`] in which all items contain a common prefix (which may be the unit prefix `""`).
 ///
 /// The [`SubSlice`] does not store what that common prefix is for performance reasons, it is up to the user to keep track of.
-#[derive(RefCastCustom, Debug)]
+#[derive(Debug)]
+// SAFETY: this type must remain repr(transparent) to [(K, V)] for from_slice(_mut) invariants
 #[repr(transparent)]
 pub struct SubSlice<K: AsRef<str>, V>(pub(crate) [(K, V)]);
 
 impl<K: AsRef<str>, V> SubSlice<K, V> {
-    // ref cast needs that unsafe block
-    // not public as it violates encapsulation
+    /// Generates a Self from a ref to backing storage
+    // bypass lint level
     #[allow(unsafe_code)]
-    #[ref_cast_custom]
-    const fn from_slice(v: &[(K, V)]) -> &Self;
+    const fn from_slice(v: &[(K, V)]) -> &Self {
+        // SAFETY: we are repr(transparent) with [(K, V)], and the lifetime/mutability remains identical
+        unsafe { core::mem::transmute(v) }
+    }
 
-    // ref cast needs that unsafe block
-    // not public as it violates encapsulation
+    /// Generates a Self from a mut ref to backing storage
+    // bypass lint level
     #[allow(unsafe_code)]
-    #[ref_cast_custom]
-    // transmute is handled by a macro, and ref-cast asserts it is safe
-    #[allow(clippy::transmute_ptr_to_ptr)]
-    fn from_slice_mut(v: &mut [(K, V)]) -> &mut Self;
+    fn from_slice_mut(v: &mut [(K, V)]) -> &mut Self {
+        // SAFETY: we are repr(transparent) with [(K, V)], and the lifetime/mutability remains identical
+        unsafe { &mut *(v as *mut [(K, V)] as *mut Self) }
+    }
 
     /// reslices self, panics on oob
     fn reslice<I: core::slice::SliceIndex<[(K, V)], Output = [(K, V)]>>(&self, i: I) -> &Self {
