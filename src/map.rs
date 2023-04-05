@@ -347,6 +347,8 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
     ///
     /// Will return an empty array if there are no matches.
     ///
+    /// This operation is `O(log n)`
+    ///
     /// # Examples
     /// ```rust
     /// # use prefix_array::PrefixArray;
@@ -362,8 +364,6 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
     ///     assert!(ab.starts_with("ab"));
     /// }
     /// ```
-    ///
-    /// This operation is `O(log n)`
     pub fn find_all_with_prefix<'a>(&'a self, prefix: &str) -> &'a Self {
         let range = self.find_all_with_prefix_idx(prefix);
         self.reslice(range)
@@ -372,6 +372,8 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
     /// Returns a mutable `SubSlice` where all `K` have the same prefix `prefix`.
     ///
     /// Will return an empty array if there are no matches.
+    ///
+    /// This operation is `O(log n)`
     ///
     /// # Examples
     /// ```rust
@@ -383,8 +385,6 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
     ///     *v += 1;
     /// }
     /// ```
-    ///
-    /// This operation is `O(log n)`
     pub fn find_all_with_prefix_mut<'a>(&'a mut self, prefix: &str) -> &'a mut Self {
         let range = self.find_all_with_prefix_idx(prefix);
         self.reslice_mut(range)
@@ -428,6 +428,8 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
 
     /// Returns whether this [`SubSlice`] contains the given key
     ///
+    /// This operation is `O(log n)`.
+    ///
     /// # Examples
     /// ```rust
     /// # use prefix_array::PrefixArray;
@@ -435,8 +437,6 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
     ///
     /// assert!(arr.contains_key("1234"));
     /// ```
-    ///
-    /// This operation is `O(log n)`.
     pub fn contains_key(&self, key: &str) -> bool {
         self.as_slice()
             .binary_search_by_key(&key, |s| s.0.as_ref())
