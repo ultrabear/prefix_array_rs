@@ -347,6 +347,22 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
     ///
     /// Will return an empty array if there are no matches.
     ///
+    /// # Examples
+    /// ```rust
+    /// # use prefix_array::PrefixArray;
+    /// let arr: PrefixArray<&str, u8>;
+    /// # arr = PrefixArray::from_iter([("abcde", 3), ("among", 56), ("aba", 3)]);
+    ///
+    /// let slice = arr.find_all_with_prefix("a");
+    /// /* do something with items starting with a */
+    ///
+    /// // instead of searching `arr` again, we can narrow what we
+    /// //  already searched and stored in `slice` for efficiency
+    /// for (ab, _) in slice.find_all_with_prefix("ab") {
+    ///     assert!(ab.starts_with("ab"));
+    /// }
+    /// ```
+    ///
     /// This operation is `O(log n)`
     pub fn find_all_with_prefix<'a>(&'a self, prefix: &str) -> &'a Self {
         let range = self.find_all_with_prefix_idx(prefix);
@@ -356,6 +372,17 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
     /// Returns a mutable `SubSlice` where all `K` have the same prefix `prefix`.
     ///
     /// Will return an empty array if there are no matches.
+    ///
+    /// # Examples
+    /// ```rust
+    /// # use prefix_array::PrefixArray;
+    /// let mut arr: PrefixArray<&str, u8>;
+    /// # arr = PrefixArray::from_iter([("abcde", 3), ("among", 56), ("aba", 3)]);
+    ///
+    /// for (_, v) in arr.find_all_with_prefix_mut("ab") {
+    ///     *v += 1;
+    /// }
+    /// ```
     ///
     /// This operation is `O(log n)`
     pub fn find_all_with_prefix_mut<'a>(&'a mut self, prefix: &str) -> &'a mut Self {
