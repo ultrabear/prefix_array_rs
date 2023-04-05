@@ -119,6 +119,16 @@ impl<K: AsRef<str>> PrefixArraySet<K> {
     /// Removes all values with the prefix provided, shifting the array in the process to account for the empty space.
     ///
     /// This operation is `O(n)`.
+    ///
+    /// # Examples
+    /// ```rust
+    /// # use prefix_array::PrefixArraySet;
+    /// let mut set = PrefixArraySet::from_iter(["a", "b", "c"]);
+    ///
+    /// set.drain_all_with_prefix("b");
+    ///
+    /// assert_eq!(set.to_vec(), &["a", "c"]);
+    /// ```
     pub fn drain_all_with_prefix<'a>(&'a mut self, prefix: &str) -> Drain<'a, K> {
         Drain(self.0.drain_all_with_prefix(prefix))
     }
