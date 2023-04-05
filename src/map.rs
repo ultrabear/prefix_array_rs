@@ -428,6 +428,14 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
 
     /// Returns whether this [`SubSlice`] contains the given key
     ///
+    /// # Examples
+    /// ```rust
+    /// # use prefix_array::PrefixArray;
+    /// let arr = PrefixArray::from_iter([("1234", "abcde")]);
+    ///
+    /// assert!(arr.contains_key("1234"));
+    /// ```
+    ///
     /// This operation is `O(log n)`.
     pub fn contains_key(&self, key: &str) -> bool {
         self.as_slice()
