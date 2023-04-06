@@ -211,7 +211,7 @@ impl<K: AsRef<str>> From<alloc::collections::BTreeSet<K>> for PrefixArraySet<K> 
     ///
     /// This assumes the implementation of `AsRef<str>` is derived from the same data that the `Ord` implementation uses.
     /// It is a logic error if this is untrue, and will render this datastructure useless.
-    fn from(v: std::collections::BTreeSet<K>) -> Self {
+    fn from(v: alloc::collections::BTreeSet<K>) -> Self {
         Self::from_unique_iter(v)
     }
 }
