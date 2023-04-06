@@ -175,7 +175,7 @@ impl<K: AsRef<str>> PrefixArraySet<K> {
         self.0.shrink_to(min_capacity);
     }
 
-    /// Makes a PrefixArraySet from an iterator in which all key items are unique
+    /// Makes a `PrefixArraySet` from an iterator in which all key items are unique
     fn from_unique_iter<T: IntoIterator<Item = K>>(v: T) -> Self {
         Self(map::PrefixArray::from_unique_iter(
             v.into_iter().map(|k| (k, ())),

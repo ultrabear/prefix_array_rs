@@ -179,7 +179,7 @@ impl<K: AsRef<str>, V> PrefixArray<K, V> {
         self.0.shrink_to(min_capacity);
     }
 
-    /// Makes a PrefixArray from an iterator in which all key items are unique
+    /// Makes a `PrefixArray` from an iterator in which all key items are unique
     pub(crate) fn from_unique_iter<T: IntoIterator<Item = (K, V)>>(v: T) -> Self {
         let mut unsorted = v.into_iter().collect::<Vec<(K, V)>>();
         // can't use by_key because of lifetime issues with as_ref
