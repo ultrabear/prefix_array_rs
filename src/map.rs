@@ -178,6 +178,15 @@ impl<K: AsRef<str>, V> PrefixArray<K, V> {
     pub fn shrink_to(&mut self, min_capacity: usize) {
         self.0.shrink_to(min_capacity);
     }
+
+    /// Makes a PrefixArray from an iterator in which all key items are unique
+    pub(crate) fn from_unique_iter<T: IntoIterator<Item = (K, V)>>(v: T) -> Self {
+        let mut unsorted = v.into_iter().collect::<Vec<(K, V)>>();
+        // can't use by_key because of lifetime issues with as_ref
+        unsorted.sort_unstable_by(|f, s| f.0.as_ref().cmp(s.0.as_ref()));
+
+        Self(unsorted)
+    }
 }
 
 impl<K: AsRef<str>, V> Extend<(K, V)> for PrefixArray<K, V> {
@@ -215,11 +224,17 @@ impl<K: AsRef<str>, V, H> From<std::collections::HashMap<K, V, H>> for PrefixArr
     /// This assumes the implementation of `AsRef<str>` is derived from the same data that the `Eq + Hash` implementation uses.
     /// It is a logic error if this is untrue, and will render this datastructure useless.
     fn from(v: std::collections::HashMap<K, V, H>) -> Self {
-        let mut unsorted = v.into_iter().collect::<Vec<(K, V)>>();
-        // can't use by_key because of lifetime issues with as_ref
-        unsorted.sort_unstable_by(|f, s| f.0.as_ref().cmp(s.0.as_ref()));
+        Self::from_unique_iter(v)
+    }
+}
 
-        Self(unsorted)
+impl<K: AsRef<str>, V> From<alloc::collections::BTreeMap<K, V>> for PrefixArray<K, V> {
+    /// Performs a lossless conversion from a `BTreeMap<K, V>` to a `PrefixArray<K, V>` in `O(n log n)` time.
+    ///
+    /// This assumes the implementation of `AsRef<str>` is derived from the same data that the `Ord` implementation uses.
+    /// It is a logic error if this is untrue, and will render this datastructure useless.
+    fn from(v: alloc::collections::BTreeMap<K, V>) -> Self {
+        Self::from_unique_iter(v)
     }
 }
 

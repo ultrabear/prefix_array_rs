@@ -174,6 +174,13 @@ impl<K: AsRef<str>> PrefixArraySet<K> {
     pub fn shrink_to(&mut self, min_capacity: usize) {
         self.0.shrink_to(min_capacity);
     }
+
+    /// Makes a PrefixArraySet from an iterator in which all key items are unique
+    fn from_unique_iter<T: IntoIterator<Item = K>>(v: T) -> Self {
+        Self(map::PrefixArray::from_unique_iter(
+            v.into_iter().map(|k| (k, ())),
+        ))
+    }
 }
 
 impl<K: AsRef<str>> Extend<K> for PrefixArraySet<K> {
@@ -195,11 +202,17 @@ impl<K: AsRef<str>, H> From<std::collections::HashSet<K, H>> for PrefixArraySet<
     /// This assumes the implementation of `AsRef<str>` is derived from the same data that the `Eq + Hash` implementation uses.
     /// It is a logic error if this is untrue, and will render this datastructure useless.
     fn from(v: std::collections::HashSet<K, H>) -> Self {
-        let mut unsorted = v.into_iter().map(|k| (k, ())).collect::<Vec<(K, ())>>();
-        // can't use by_key because of lifetime issues with as_ref
-        unsorted.sort_unstable_by(|f, s| f.0.as_ref().cmp(s.0.as_ref()));
+        Self::from_unique_iter(v)
+    }
+}
 
-        Self(map::PrefixArray(unsorted))
+impl<K: AsRef<str>> From<alloc::collections::BTreeSet<K>> for PrefixArraySet<K> {
+    /// Performs a lossless conversion from a `BTreeSet<K>` to a `PrefixArraySet<K>` in `O(n log n)` time.
+    ///
+    /// This assumes the implementation of `AsRef<str>` is derived from the same data that the `Ord` implementation uses.
+    /// It is a logic error if this is untrue, and will render this datastructure useless.
+    fn from(v: std::collections::BTreeSet<K>) -> Self {
+        Self::from_unique_iter(v)
     }
 }
 
