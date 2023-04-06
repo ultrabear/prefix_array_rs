@@ -191,6 +191,9 @@ impl<K: AsRef<str>> Extend<K> for PrefixArraySet<K> {
 #[cfg(feature = "std")]
 impl<K: AsRef<str>, H> From<std::collections::HashSet<K, H>> for PrefixArraySet<K> {
     /// Performs a lossless conversion from a `HashSet<K>` to a `PrefixArraySet<K>` in `O(n log n)` time.
+    ///
+    /// This assumes the implementation of `AsRef<str>` is derived from the same data that the `Eq + Hash` implementation uses.
+    /// It is a logic error if this is untrue, and will render this datastructure useless.
     fn from(v: std::collections::HashSet<K, H>) -> Self {
         let mut unsorted = v.into_iter().map(|k| (k, ())).collect::<Vec<(K, ())>>();
         // can't use by_key because of lifetime issues with as_ref
