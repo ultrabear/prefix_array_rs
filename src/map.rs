@@ -23,7 +23,7 @@ pub use iter::{Drain, IntoIter, Iter, IterMut};
 ///  Doing so renders the datastructure useless (but will NOT cause UB).
 ///
 /// The main downside of a [`PrefixArray`] over a trie type datastructure is that insertions have a significant `O(n)` cost,
-/// so if you are adding multiple values over the lifetime of the [`PrefixArray`] it may become less efficient overall than a traditional tree
+/// so if you are adding multiple values over the lifetime of the [`PrefixArray`] it may become less efficient overall than a traditional tree.
 #[derive(Debug)]
 pub struct PrefixArray<K: AsRef<str>, V>(pub(crate) Vec<(K, V)>);
 
