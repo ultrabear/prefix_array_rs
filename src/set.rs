@@ -336,7 +336,7 @@ impl<K: AsRef<str>> SetSubSlice<K> {
 mod tests {
     use super::*;
 
-    use std::vec;
+    use alloc::vec;
 
     #[test]
     fn submatches() {

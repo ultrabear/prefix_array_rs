@@ -155,7 +155,7 @@ fn oh_boy() {
 #[should_panic]
 fn size_overflow() {
     extern crate std;
-    use std::vec;
+    use alloc::vec;
 
     vec![].insert_many(vec![(1, 2u8)]);
 }

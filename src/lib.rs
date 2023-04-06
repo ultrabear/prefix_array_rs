@@ -4,6 +4,7 @@
 #![warn(clippy::cargo)]
 #![warn(missing_docs)]
 #![allow(clippy::module_name_repetitions)]
+#![warn(clippy::alloc_instead_of_core, clippy::std_instead_of_alloc)]
 //! `prefix_array` is a crate consisting of datastructures that aid in querying data based on prefixes of string keys,
 //!  the main feature being searching and refining on subgroups with common prefixes.
 //!
