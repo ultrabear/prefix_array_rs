@@ -1,13 +1,13 @@
 [package]
 name = "prefix_array"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 keywords = ["array", "collection", "generic", "prefix", "search"]
 categories = ["data-structures", "text-processing"]
 homepage = "https://github.com/ultrabear/prefix_array_rs"
 repository = "https://github.com/ultrabear/prefix_array_rs"
 authors = ["Alexander Hall <bearodark@gmail.com>"]
-description = "A generic PrefixArray container type"
+description = "A generic container for searching on prefixes of keys"
 readme = "README.md"
 license = "MPL-2.0"
 
