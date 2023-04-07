@@ -380,4 +380,16 @@ mod tests {
 
         assert!(parraysingle.is_empty());
     }
+
+    #[test]
+    fn is_eq() {
+        let arr1 = PrefixArraySet::from_iter(["abcde", "among"]);
+        let arr2 = PrefixArraySet::from_iter(["abcde", "among"]);
+
+        assert_eq!(arr1, arr2);
+
+        let arr3 = PrefixArraySet::new();
+
+        assert_ne!(&*arr3, &*arr2);
+    }
 }
