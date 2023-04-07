@@ -6,7 +6,7 @@ extern crate std;
 extern crate alloc;
 
 use alloc::{borrow::ToOwned, vec::Vec};
-use core::ops::Deref;
+use core::{fmt, ops::Deref};
 
 mod iter;
 pub use iter::{Drain, IntoIter, Iter};
@@ -24,8 +24,8 @@ use super::map;
 #[derive(PartialEq, Eq)]
 pub struct PrefixArraySet<K: AsRef<str>>(map::PrefixArray<K, ()>);
 
-impl<K: AsRef<str> + core::fmt::Debug> core::fmt::Debug for PrefixArraySet<K> {
-    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+impl<K: AsRef<str> + fmt::Debug> fmt::Debug for PrefixArraySet<K> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "PrefixArraySet")?;
         f.debug_set().entries(self.iter()).finish()
     }
@@ -256,8 +256,8 @@ impl<K: AsRef<str> + Clone> ToOwned for SetSubSlice<K> {
     }
 }
 
-impl<K: AsRef<str> + core::fmt::Debug> core::fmt::Debug for SetSubSlice<K> {
-    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+impl<K: AsRef<str> + fmt::Debug> fmt::Debug for SetSubSlice<K> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "SetSubSlice")?;
         f.debug_set().entries(self.iter()).finish()
     }

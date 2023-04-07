@@ -8,6 +8,7 @@ extern crate alloc;
 use alloc::{borrow::ToOwned, vec::Vec};
 use core::{
     cmp::Ordering,
+    fmt,
     ops::{Deref, DerefMut},
 };
 
@@ -27,8 +28,8 @@ pub use iter::{Drain, IntoIter, Iter, IterMut};
 #[derive(PartialEq, Eq)]
 pub struct PrefixArray<K: AsRef<str>, V>(pub(crate) Vec<(K, V)>);
 
-impl<K: AsRef<str> + core::fmt::Debug, V: core::fmt::Debug> core::fmt::Debug for PrefixArray<K, V> {
-    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+impl<K: AsRef<str> + fmt::Debug, V: fmt::Debug> fmt::Debug for PrefixArray<K, V> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "PrefixArray")?;
         f.debug_map().entries(self.iter()).finish()
     }
@@ -284,8 +285,8 @@ impl<K: AsRef<str> + Clone, V: Clone> ToOwned for SubSlice<K, V> {
     }
 }
 
-impl<K: AsRef<str> + core::fmt::Debug, V: core::fmt::Debug> core::fmt::Debug for SubSlice<K, V> {
-    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+impl<K: AsRef<str> + fmt::Debug, V: fmt::Debug> fmt::Debug for SubSlice<K, V> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "SubSlice")?;
         f.debug_map().entries(self.iter()).finish()
     }
