@@ -24,8 +24,14 @@ pub use iter::{Drain, IntoIter, Iter, IterMut};
 ///
 /// The main downside of a [`PrefixArray`] over a trie type datastructure is that insertions have a significant `O(n)` cost,
 /// so if you are adding multiple values over the lifetime of the [`PrefixArray`] it may become less efficient overall than a traditional tree.
-#[derive(Debug)]
 pub struct PrefixArray<K: AsRef<str>, V>(pub(crate) Vec<(K, V)>);
+
+impl<K: AsRef<str> + core::fmt::Debug, V: core::fmt::Debug> core::fmt::Debug for PrefixArray<K, V> {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        write!(f, "PrefixArray")?;
+        f.debug_map().entries(self.iter()).finish()
+    }
+}
 
 // Manually impl to get clone_from
 impl<K: AsRef<str> + Clone, V: Clone> Clone for PrefixArray<K, V> {
@@ -277,10 +283,16 @@ impl<K: AsRef<str> + Clone, V: Clone> ToOwned for SubSlice<K, V> {
     }
 }
 
+impl<K: AsRef<str> + core::fmt::Debug, V: core::fmt::Debug> core::fmt::Debug for SubSlice<K, V> {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        write!(f, "SubSlice")?;
+        f.debug_map().entries(self.iter()).finish()
+    }
+}
+
 /// A [`SubSlice`] of a [`PrefixArray`] in which all items contain a common prefix (which may be the unit prefix `""`).
 ///
 /// The [`SubSlice`] does not store what that common prefix is for performance reasons, it is up to the user to keep track of.
-#[derive(Debug)]
 // SAFETY: this type must remain repr(transparent) to [(K, V)] for from_slice(_mut) invariants
 #[repr(transparent)]
 pub struct SubSlice<K: AsRef<str>, V>(pub(crate) [(K, V)]);

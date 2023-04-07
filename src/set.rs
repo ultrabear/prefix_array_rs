@@ -21,8 +21,14 @@ use super::map;
 ///
 /// The main downside of a [`PrefixArraySet`] over a trie type datastructure is that insertions have a significant `O(n)` cost,
 /// so if you are adding multiple values over the lifetime of the [`PrefixArraySet`] it may become less efficient overall than a traditional tree.
-#[derive(Debug)]
 pub struct PrefixArraySet<K: AsRef<str>>(map::PrefixArray<K, ()>);
+
+impl<K: AsRef<str> + core::fmt::Debug> core::fmt::Debug for PrefixArraySet<K> {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        write!(f, "PrefixArraySet")?;
+        f.debug_set().entries(self.iter()).finish()
+    }
+}
 
 // Manually impl to get clone_from
 impl<K: AsRef<str> + Clone> Clone for PrefixArraySet<K> {
@@ -249,10 +255,16 @@ impl<K: AsRef<str> + Clone> ToOwned for SetSubSlice<K> {
     }
 }
 
+impl<K: AsRef<str> + core::fmt::Debug> core::fmt::Debug for SetSubSlice<K> {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        write!(f, "SetSubSlice")?;
+        f.debug_set().entries(self.iter()).finish()
+    }
+}
+
 /// A subslice of a [`PrefixArraySet`] in which all items contain a common prefix (which may be the unit prefix `""`).
 ///
 /// The [`SetSubSlice`] does not store what that common prefix is for performance reasons (but it can be computed, see: [`SetSubSlice::common_prefix`]), it is up to the user to keep track of.
-#[derive(Debug)]
 // SAFETY: this type must remain repr(transparent) to map::SubSlice<K, ()> for from_map_slice invariants
 #[repr(transparent)]
 pub struct SetSubSlice<K: AsRef<str>>(map::SubSlice<K, ()>);
