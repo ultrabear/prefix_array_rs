@@ -8,10 +8,10 @@
 //! `prefix_array` is a crate consisting of datastructures that aid in querying data based on prefixes of string keys,
 //!  the main feature being searching and refining on subgroups with common prefixes.
 //!
-//!  Use [`PrefixArray`] when you want a HashMap-like structure, and [`PrefixArraySet`] for a HashSet-like structure.
+//!  Use `PrefixArray` when you want a HashMap-like structure, and `PrefixArraySet` for a HashSet-like structure.
 //!
 //! ## Creating a PrefixArray(Set)
-//! For creating a new collection, ideally you can use the [`FromIterator`] implementation, this has `O(n log n)` complexity and with an [`ExactSizeIterator`] will allocate once.
+//! For creating a new collection, ideally you can use the `FromIterator` implementation, this has `O(n log n)` complexity and with an `ExactSizeIterator` will allocate once.
 //!  If you cannot use `FromIterator` it is recommended to use `PrefixArray(Set)::from_vec_lossy` instead, as this is what `FromIterator` calls under the hood.
 //!
 //! It is ill advised to use `insert` in a loop to create a `PrefixArray(Set)`, as this has `O(n^2)` complexity.
@@ -20,7 +20,8 @@
 //!
 //! ## Basic usage
 //! ```rust
-//! # use prefix_array::PrefixArray;
+//! use prefix_array::PrefixArray;
+//!
 //! // construct a new prefix array from an iterator
 //! let arr = PrefixArray::from_iter([("abcde", 123), ("absgh", 1234)]);
 //!
