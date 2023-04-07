@@ -21,6 +21,7 @@ use super::map;
 ///
 /// The main downside of a [`PrefixArraySet`] over a trie type datastructure is that insertions have a significant `O(n)` cost,
 /// so if you are adding multiple values over the lifetime of the [`PrefixArraySet`] it may become less efficient overall than a traditional tree.
+#[derive(PartialEq, Eq)]
 pub struct PrefixArraySet<K: AsRef<str>>(map::PrefixArray<K, ()>);
 
 impl<K: AsRef<str> + core::fmt::Debug> core::fmt::Debug for PrefixArraySet<K> {
@@ -267,6 +268,7 @@ impl<K: AsRef<str> + core::fmt::Debug> core::fmt::Debug for SetSubSlice<K> {
 /// The [`SetSubSlice`] does not store what that common prefix is for performance reasons (but it can be computed, see: [`SetSubSlice::common_prefix`]), it is up to the user to keep track of.
 // SAFETY: this type must remain repr(transparent) to map::SubSlice<K, ()> for from_map_slice invariants
 #[repr(transparent)]
+#[derive(PartialEq, Eq)]
 pub struct SetSubSlice<K: AsRef<str>>(map::SubSlice<K, ()>);
 
 impl<K: AsRef<str>> SetSubSlice<K> {

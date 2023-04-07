@@ -24,6 +24,7 @@ pub use iter::{Drain, IntoIter, Iter, IterMut};
 ///
 /// The main downside of a [`PrefixArray`] over a trie type datastructure is that insertions have a significant `O(n)` cost,
 /// so if you are adding multiple values over the lifetime of the [`PrefixArray`] it may become less efficient overall than a traditional tree.
+#[derive(PartialEq, Eq)]
 pub struct PrefixArray<K: AsRef<str>, V>(pub(crate) Vec<(K, V)>);
 
 impl<K: AsRef<str> + core::fmt::Debug, V: core::fmt::Debug> core::fmt::Debug for PrefixArray<K, V> {
@@ -295,6 +296,7 @@ impl<K: AsRef<str> + core::fmt::Debug, V: core::fmt::Debug> core::fmt::Debug for
 /// The [`SubSlice`] does not store what that common prefix is for performance reasons, it is up to the user to keep track of.
 // SAFETY: this type must remain repr(transparent) to [(K, V)] for from_slice(_mut) invariants
 #[repr(transparent)]
+#[derive(PartialEq, Eq)]
 pub struct SubSlice<K: AsRef<str>, V>(pub(crate) [(K, V)]);
 
 impl<K: AsRef<str>, V> SubSlice<K, V> {
