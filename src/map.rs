@@ -598,4 +598,13 @@ mod test {
 
         assert_eq!(res, &1);
     }
+
+    #[test]
+    fn extend() {
+        let mut v = PrefixArray::new();
+
+        v.extend([("a", 0), ("a", 1)]);
+
+        assert_eq!(v.len(), 1);
+    }
 }
