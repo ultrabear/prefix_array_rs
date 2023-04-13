@@ -22,9 +22,9 @@ macro_rules! assert_ty {
 }
 
 /// Consuming Iterator from a [`PrefixArray`][super::PrefixArray]
-pub struct IntoIter<K: AsRef<str>, V>(alloc::vec::IntoIter<(K, V)>);
+pub struct IntoIter<K, V>(alloc::vec::IntoIter<(K, V)>);
 
-impl<K: AsRef<str>, V> Iterator for IntoIter<K, V> {
+impl<K, V> Iterator for IntoIter<K, V> {
     type Item = (K, V);
 
     #[inline]
@@ -47,10 +47,10 @@ impl<K: AsRef<str>, V> Iterator for IntoIter<K, V> {
 }
 
 assert_ty!(alloc::vec::IntoIter<()>);
-impl<K: AsRef<str>, V> FusedIterator for IntoIter<K, V> {}
-impl<K: AsRef<str>, V> ExactSizeIterator for IntoIter<K, V> {}
+impl<K, V> FusedIterator for IntoIter<K, V> {}
+impl<K, V> ExactSizeIterator for IntoIter<K, V> {}
 
-impl<K: AsRef<str>, V> DoubleEndedIterator for IntoIter<K, V> {
+impl<K, V> DoubleEndedIterator for IntoIter<K, V> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         self.0.next_back()
@@ -58,9 +58,9 @@ impl<K: AsRef<str>, V> DoubleEndedIterator for IntoIter<K, V> {
 }
 
 /// Immutable view Iterator from a [`PrefixArray`][super::PrefixArray] or [`SubSlice`][super::SubSlice]
-pub struct Iter<'a, K: AsRef<str>, V>(pub(super) core::slice::Iter<'a, (K, V)>);
+pub struct Iter<'a, K, V>(pub(super) core::slice::Iter<'a, (K, V)>);
 
-impl<'a, K: AsRef<str>, V> Iterator for Iter<'a, K, V> {
+impl<'a, K, V> Iterator for Iter<'a, K, V> {
     type Item = (&'a K, &'a V);
 
     #[inline]
@@ -83,10 +83,10 @@ impl<'a, K: AsRef<str>, V> Iterator for Iter<'a, K, V> {
 }
 
 assert_ty!(core::slice::Iter<'_, ()>);
-impl<'a, K: AsRef<str>, V> FusedIterator for Iter<'a, K, V> {}
-impl<'a, K: AsRef<str>, V> ExactSizeIterator for Iter<'a, K, V> {}
+impl<'a, K, V> FusedIterator for Iter<'a, K, V> {}
+impl<'a, K, V> ExactSizeIterator for Iter<'a, K, V> {}
 
-impl<'a, K: AsRef<str>, V> DoubleEndedIterator for Iter<'a, K, V> {
+impl<'a, K, V> DoubleEndedIterator for Iter<'a, K, V> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         self.0.next_back().map(|(k, v)| (k, v))
@@ -94,9 +94,9 @@ impl<'a, K: AsRef<str>, V> DoubleEndedIterator for Iter<'a, K, V> {
 }
 
 /// Mutable view Iterator from a [`PrefixArray`][super::PrefixArray] or [`SubSlice`][super::SubSlice]
-pub struct IterMut<'a, K: AsRef<str>, V>(pub(super) core::slice::IterMut<'a, (K, V)>);
+pub struct IterMut<'a, K, V>(pub(super) core::slice::IterMut<'a, (K, V)>);
 
-impl<'a, K: AsRef<str>, V> Iterator for IterMut<'a, K, V> {
+impl<'a, K, V> Iterator for IterMut<'a, K, V> {
     type Item = (&'a K, &'a mut V);
 
     #[inline]
@@ -119,10 +119,10 @@ impl<'a, K: AsRef<str>, V> Iterator for IterMut<'a, K, V> {
 }
 
 assert_ty!(core::slice::IterMut<'_, ()>);
-impl<'a, K: AsRef<str>, V> FusedIterator for IterMut<'a, K, V> {}
-impl<'a, K: AsRef<str>, V> ExactSizeIterator for IterMut<'a, K, V> {}
+impl<'a, K, V> FusedIterator for IterMut<'a, K, V> {}
+impl<'a, K, V> ExactSizeIterator for IterMut<'a, K, V> {}
 
-impl<'a, K: AsRef<str>, V> DoubleEndedIterator for IterMut<'a, K, V> {
+impl<'a, K, V> DoubleEndedIterator for IterMut<'a, K, V> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         self.0.next_back().map(|(k, v)| (&*k, v))
@@ -131,9 +131,9 @@ impl<'a, K: AsRef<str>, V> DoubleEndedIterator for IterMut<'a, K, V> {
 
 /// A Draining Iterator of some or all elements of a [`PrefixArray`][super::PrefixArray].
 ///  Holds a mutable reference to the parent `PrefixArray`
-pub struct Drain<'a, K: AsRef<str>, V>(pub(super) alloc::vec::Drain<'a, (K, V)>);
+pub struct Drain<'a, K, V>(pub(super) alloc::vec::Drain<'a, (K, V)>);
 
-impl<'a, K: AsRef<str>, V> Iterator for Drain<'a, K, V> {
+impl<'a, K, V> Iterator for Drain<'a, K, V> {
     type Item = (K, V);
 
     #[inline]
@@ -155,10 +155,10 @@ impl<'a, K: AsRef<str>, V> Iterator for Drain<'a, K, V> {
 }
 
 assert_ty!(alloc::vec::Drain<'_, ()>);
-impl<'a, K: AsRef<str>, V> FusedIterator for Drain<'a, K, V> {}
-impl<'a, K: AsRef<str>, V> ExactSizeIterator for Drain<'a, K, V> {}
+impl<'a, K, V> FusedIterator for Drain<'a, K, V> {}
+impl<'a, K, V> ExactSizeIterator for Drain<'a, K, V> {}
 
-impl<'a, K: AsRef<str>, V> DoubleEndedIterator for Drain<'a, K, V> {
+impl<'a, K, V> DoubleEndedIterator for Drain<'a, K, V> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         self.0.next_back()

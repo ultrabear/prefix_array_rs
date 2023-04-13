@@ -3,9 +3,9 @@ extern crate alloc;
 use core::iter::FusedIterator;
 
 /// Iterator from a [`PrefixArraySet`][super::PrefixArraySet].
-pub struct IntoIter<K: AsRef<str>>(crate::map::IntoIter<K, ()>);
+pub struct IntoIter<K>(crate::map::IntoIter<K, ()>);
 
-impl<K: AsRef<str>> Iterator for IntoIter<K> {
+impl<K> Iterator for IntoIter<K> {
     type Item = K;
 
     #[inline]
@@ -27,10 +27,10 @@ impl<K: AsRef<str>> Iterator for IntoIter<K> {
     // TODO impl advance_by when feature(iter_advance_by) is stabilized
 }
 
-impl<K: AsRef<str>> FusedIterator for IntoIter<K> {}
-impl<K: AsRef<str>> ExactSizeIterator for IntoIter<K> {}
+impl<K> FusedIterator for IntoIter<K> {}
+impl<K> ExactSizeIterator for IntoIter<K> {}
 
-impl<K: AsRef<str>> DoubleEndedIterator for IntoIter<K> {
+impl<K> DoubleEndedIterator for IntoIter<K> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         self.0.next_back().map(|(k, _)| k)
@@ -38,9 +38,9 @@ impl<K: AsRef<str>> DoubleEndedIterator for IntoIter<K> {
 }
 
 /// Immutable view Iterator from a [`PrefixArraySet`][super::PrefixArraySet] or [`SetSubSlice`][super::SetSubSlice]
-pub struct Iter<'a, K: AsRef<str>>(pub(super) crate::map::Iter<'a, K, ()>);
+pub struct Iter<'a, K>(pub(super) crate::map::Iter<'a, K, ()>);
 
-impl<'a, K: AsRef<str>> Iterator for Iter<'a, K> {
+impl<'a, K> Iterator for Iter<'a, K> {
     type Item = &'a K;
 
     #[inline]
@@ -62,10 +62,10 @@ impl<'a, K: AsRef<str>> Iterator for Iter<'a, K> {
     // TODO impl advance_by when feature(iter_advance_by) is stabilized
 }
 
-impl<'a, K: AsRef<str>> FusedIterator for Iter<'a, K> {}
-impl<'a, K: AsRef<str>> ExactSizeIterator for Iter<'a, K> {}
+impl<'a, K> FusedIterator for Iter<'a, K> {}
+impl<'a, K> ExactSizeIterator for Iter<'a, K> {}
 
-impl<'a, K: AsRef<str>> DoubleEndedIterator for Iter<'a, K> {
+impl<'a, K> DoubleEndedIterator for Iter<'a, K> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         self.0.next_back().map(|(k, _)| k)
@@ -74,9 +74,9 @@ impl<'a, K: AsRef<str>> DoubleEndedIterator for Iter<'a, K> {
 
 /// A Draining Iterator of some or all elements of a [`PrefixArraySet`][super::PrefixArraySet].
 ///  Holds a mutable reference to the parent `PrefixArraySet`
-pub struct Drain<'a, K: AsRef<str>>(pub(super) crate::map::Drain<'a, K, ()>);
+pub struct Drain<'a, K>(pub(super) crate::map::Drain<'a, K, ()>);
 
-impl<'a, K: AsRef<str>> Iterator for Drain<'a, K> {
+impl<'a, K> Iterator for Drain<'a, K> {
     type Item = K;
 
     #[inline]
@@ -98,10 +98,10 @@ impl<'a, K: AsRef<str>> Iterator for Drain<'a, K> {
     // TODO impl advance_by when feature(iter_advance_by) is stabilized
 }
 
-impl<'a, K: AsRef<str>> FusedIterator for Drain<'a, K> {}
-impl<'a, K: AsRef<str>> ExactSizeIterator for Drain<'a, K> {}
+impl<'a, K> FusedIterator for Drain<'a, K> {}
+impl<'a, K> ExactSizeIterator for Drain<'a, K> {}
 
-impl<'a, K: AsRef<str>> DoubleEndedIterator for Drain<'a, K> {
+impl<'a, K> DoubleEndedIterator for Drain<'a, K> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         self.0.next_back().map(|(k, _)| k)
