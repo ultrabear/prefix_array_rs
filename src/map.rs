@@ -275,6 +275,12 @@ impl<K: AsRef<str>, V> core::borrow::Borrow<SubSlice<K, V>> for PrefixArray<K, V
     }
 }
 
+impl<K: AsRef<str>, V> core::borrow::BorrowMut<SubSlice<K, V>> for PrefixArray<K, V> {
+    fn borrow_mut(&mut self) -> &mut SubSlice<K, V> {
+        self
+    }
+}
+
 impl<K: AsRef<str> + Clone, V: Clone> ToOwned for SubSlice<K, V> {
     type Owned = PrefixArray<K, V>;
 
