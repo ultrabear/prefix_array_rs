@@ -10,6 +10,8 @@ authors = ["Alexander Hall <bearodark@gmail.com>"]
 description = "A generic container for searching on prefixes of keys"
 readme = "README.md"
 license = "MPL-2.0"
+# Subject to change
+rust-version = "1.65"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
