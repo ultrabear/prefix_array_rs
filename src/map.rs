@@ -221,6 +221,9 @@ impl<K: AsRef<str>, V> Extend<(K, V)> for PrefixArray<K, V> {
         // presort by string so that identical indexes are mapped correctly
         insert.sort_unstable_by(|(_, a), (_, b)| a.0.as_ref().cmp(b.0.as_ref()));
 
+        // avoid duplicate K being inserted
+        insert.dedup_by(|(_, a), (_, b)| a.0.as_ref() == b.0.as_ref());
+
         self.0.insert_many(insert);
     }
 }
