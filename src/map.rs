@@ -198,7 +198,9 @@ impl<K: AsRef<str>, V> PrefixArray<K, V> {
 }
 
 impl<K: AsRef<str>, V> Extend<(K, V)> for PrefixArray<K, V> {
-    /// Extends the [`PrefixArray`] with more values, overwriting any duplicate keys in the map.
+    /// Extends the [`PrefixArray`] with more values, overwriting any duplicate key's values in the map (will not update the key).
+    ///
+    /// It is currently unspecified if two identical keys are given, who are not already in the set, which K/V pair will be kept.
     ///
     /// This operation is `O(n + k log k)` where k is the number of elements in the iterator.
     fn extend<T>(&mut self, iter: T)
@@ -207,9 +209,11 @@ impl<K: AsRef<str>, V> Extend<(K, V)> for PrefixArray<K, V> {
     {
         let iter = iter.into_iter();
 
+        let mut insert = Vec::new();
+
         // speculative optimization, assume that most items are going to be newly inserted
         // this will over allocate when that is untrue
-        let mut insert = Vec::with_capacity(iter.size_hint().0);
+        insert.reserve(iter.size_hint().0);
 
         for k in iter {
             match self.0.binary_search_by_key(&k.0.as_ref(), |s| s.0.as_ref()) {
@@ -217,7 +221,7 @@ impl<K: AsRef<str>, V> Extend<(K, V)> for PrefixArray<K, V> {
                 Err(idx) => insert.push((idx, k)),
                 // replace old value
                 Ok(idx) => {
-                    self.0[idx] = k;
+                    self.0[idx].1 = k.1;
                 }
             }
         }

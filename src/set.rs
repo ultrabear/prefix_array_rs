@@ -191,7 +191,9 @@ impl<K: AsRef<str>> PrefixArraySet<K> {
 }
 
 impl<K: AsRef<str>> Extend<K> for PrefixArraySet<K> {
-    /// Extends the [`PrefixArraySet`] with more values, overwriting any duplicates with the new values.
+    /// Extends the [`PrefixArraySet`] with more values, skipping updating any duplicates.
+    ///
+    /// It is currently unspecified if two identical values are given, who are not already in the set, which value will be kept.
     ///
     /// This operation is `O(n + k log k)` where k is the number of elements in the iterator.
     fn extend<T>(&mut self, iter: T)
