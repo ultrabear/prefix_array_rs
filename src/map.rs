@@ -205,7 +205,11 @@ impl<K: AsRef<str>, V> Extend<(K, V)> for PrefixArray<K, V> {
     where
         T: IntoIterator<Item = (K, V)>,
     {
-        let mut insert = Vec::new();
+        let iter = iter.into_iter();
+
+        // speculative optimization, assume that most items are going to be newly inserted
+        // this will over allocate when that is untrue
+        let mut insert = Vec::with_capacity(iter.size_hint().0);
 
         for k in iter {
             match self.0.binary_search_by_key(&k.0.as_ref(), |s| s.0.as_ref()) {
