@@ -7,6 +7,7 @@ extern crate alloc;
 
 use alloc::{borrow::ToOwned, vec::Vec};
 use core::{
+    mem,
     cmp::Ordering,
     fmt,
     ops::{Deref, DerefMut},
@@ -115,10 +116,7 @@ impl<K: AsRef<str>, V> PrefixArray<K, V> {
                 None
             }
             Ok(idx) => {
-                let mut sbox = (key, value);
-                core::mem::swap(&mut self.0[idx], &mut sbox);
-
-                Some(sbox.1)
+                Some(mem::replace(&mut self.0[idx].1, value))
             }
         }
     }
