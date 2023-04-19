@@ -7,9 +7,8 @@ extern crate alloc;
 
 use alloc::{borrow::ToOwned, vec::Vec};
 use core::{
-    mem,
     cmp::Ordering,
-    fmt,
+    fmt, mem,
     ops::{Deref, DerefMut},
 };
 
@@ -106,7 +105,9 @@ impl<K: AsRef<str>, V> PrefixArray<K, V> {
         Self(v)
     }
 
-    /// Inserts the given K/V pair into the [`PrefixArray`], returning the old V if one was present for this K
+    /// Inserts the given K/V pair into the [`PrefixArray`], returning the old V if one was present for this K.
+    ///
+    /// This will not update the K in the map if one was already present.
     ///
     /// This operation is `O(n)`.
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
@@ -115,9 +116,7 @@ impl<K: AsRef<str>, V> PrefixArray<K, V> {
                 self.0.insert(idx, (key, value));
                 None
             }
-            Ok(idx) => {
-                Some(mem::replace(&mut self.0[idx].1, value))
-            }
+            Ok(idx) => Some(mem::replace(&mut self.0[idx].1, value)),
         }
     }
 
@@ -321,7 +320,7 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
     #[allow(unsafe_code)]
     const fn from_slice(v: &[(K, V)]) -> &Self {
         // SAFETY: we are repr(transparent) with [(K, V)], and the lifetime/mutability remains identical
-        unsafe { core::mem::transmute(v) }
+        unsafe { mem::transmute(v) }
     }
 
     /// Generates a Self from a mut ref to backing storage
