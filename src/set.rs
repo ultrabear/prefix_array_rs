@@ -205,6 +205,7 @@ impl<K: AsRef<str>> Extend<K> for PrefixArraySet<K> {
 }
 
 #[cfg(feature = "std")]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl<K: AsRef<str>, H> From<std::collections::HashSet<K, H>> for PrefixArraySet<K> {
     /// Performs a lossless conversion from a `HashSet<K>` to a `PrefixArraySet<K>` in `O(n log n)` time.
     ///
