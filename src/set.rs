@@ -6,7 +6,7 @@ extern crate std;
 extern crate alloc;
 
 use alloc::{borrow::ToOwned, vec::Vec};
-use core::{fmt, ops::Deref};
+use core::{borrow::Borrow, fmt, ops::Deref};
 
 mod iter;
 pub use iter::{Drain, IntoIter, Iter};
@@ -22,9 +22,9 @@ use super::map;
 /// The main downside of a [`PrefixArraySet`] over a trie type datastructure is that insertions have a significant `O(n)` cost,
 /// so if you are adding multiple values over the lifetime of the [`PrefixArraySet`] it may become less efficient overall than a traditional tree.
 #[derive(PartialEq, Eq)]
-pub struct PrefixArraySet<K: AsRef<str>>(map::PrefixArray<K, ()>);
+pub struct PrefixArraySet<K: Borrow<str>>(map::PrefixArray<K, ()>);
 
-impl<K: AsRef<str> + fmt::Debug> fmt::Debug for PrefixArraySet<K> {
+impl<K: Borrow<str> + fmt::Debug> fmt::Debug for PrefixArraySet<K> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "PrefixArraySet")?;
         f.debug_set().entries(self.iter()).finish()
@@ -32,7 +32,7 @@ impl<K: AsRef<str> + fmt::Debug> fmt::Debug for PrefixArraySet<K> {
 }
 
 // Manually impl to get clone_from
-impl<K: AsRef<str> + Clone> Clone for PrefixArraySet<K> {
+impl<K: Borrow<str> + Clone> Clone for PrefixArraySet<K> {
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
@@ -42,13 +42,13 @@ impl<K: AsRef<str> + Clone> Clone for PrefixArraySet<K> {
     }
 }
 
-impl<K: AsRef<str>> Default for PrefixArraySet<K> {
+impl<K: Borrow<str>> Default for PrefixArraySet<K> {
     fn default() -> Self {
         PrefixArraySet::new()
     }
 }
 
-impl<K: AsRef<str>> PrefixArraySet<K> {
+impl<K: Borrow<str>> PrefixArraySet<K> {
     /// Create a new empty [`PrefixArraySet`].
     ///
     /// This function will not allocate anything.
@@ -113,7 +113,7 @@ impl<K: AsRef<str>> PrefixArraySet<K> {
         // This functionality is not available in the HashMap api so we will make it ourself
         match (self.0)
             .0
-            .binary_search_by_key(&key.as_ref(), |s| s.0.as_ref())
+            .binary_search_by_key(&key.borrow(), |s| s.0.borrow())
         {
             Ok(idx) => Some(core::mem::replace(&mut (self.0).0[idx].0, key)),
             Err(idx) => {
@@ -190,7 +190,7 @@ impl<K: AsRef<str>> PrefixArraySet<K> {
     }
 }
 
-impl<K: AsRef<str>> Extend<K> for PrefixArraySet<K> {
+impl<K: Borrow<str>> Extend<K> for PrefixArraySet<K> {
     /// Extends the [`PrefixArraySet`] with more values, skipping updating any duplicates.
     ///
     /// It is currently unspecified if two identical values are given, who are not already in the set, which value will be kept.
@@ -206,33 +206,27 @@ impl<K: AsRef<str>> Extend<K> for PrefixArraySet<K> {
 
 #[cfg(feature = "std")]
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-impl<K: AsRef<str>, H> From<std::collections::HashSet<K, H>> for PrefixArraySet<K> {
+impl<K: Borrow<str>, H> From<std::collections::HashSet<K, H>> for PrefixArraySet<K> {
     /// Performs a lossless conversion from a `HashSet<K>` to a `PrefixArraySet<K>` in `O(n log n)` time.
-    ///
-    /// This assumes the implementation of `AsRef<str>` is derived from the same data that the `Eq + Hash` implementation uses.
-    /// It is a logic error if this is untrue, and will render this datastructure useless.
     fn from(v: std::collections::HashSet<K, H>) -> Self {
         Self::from_unique_iter(v)
     }
 }
 
-impl<K: AsRef<str>> From<alloc::collections::BTreeSet<K>> for PrefixArraySet<K> {
+impl<K: Borrow<str>> From<alloc::collections::BTreeSet<K>> for PrefixArraySet<K> {
     /// Performs a lossless conversion from a `BTreeSet<K>` to a `PrefixArraySet<K>` in `O(n log n)` time.
-    ///
-    /// This assumes the implementation of `AsRef<str>` is derived from the same data that the `Ord` implementation uses.
-    /// It is a logic error if this is untrue, and will render this datastructure useless.
     fn from(v: alloc::collections::BTreeSet<K>) -> Self {
         Self::from_unique_iter(v)
     }
 }
 
-impl<K: AsRef<str>> From<PrefixArraySet<K>> for Vec<K> {
+impl<K: Borrow<str>> From<PrefixArraySet<K>> for Vec<K> {
     fn from(v: PrefixArraySet<K>) -> Vec<K> {
         Vec::from(v.0).into_iter().map(|(k, _)| k).collect()
     }
 }
 
-impl<K: AsRef<str>> Deref for PrefixArraySet<K> {
+impl<K: Borrow<str>> Deref for PrefixArraySet<K> {
     type Target = SetSubSlice<K>;
 
     fn deref(&self) -> &Self::Target {
@@ -240,13 +234,13 @@ impl<K: AsRef<str>> Deref for PrefixArraySet<K> {
     }
 }
 
-impl<K: AsRef<str>> core::borrow::Borrow<SetSubSlice<K>> for PrefixArraySet<K> {
+impl<K: Borrow<str>> core::borrow::Borrow<SetSubSlice<K>> for PrefixArraySet<K> {
     fn borrow(&self) -> &SetSubSlice<K> {
         self
     }
 }
 
-impl<K: AsRef<str> + Clone> ToOwned for SetSubSlice<K> {
+impl<K: Borrow<str> + Clone> ToOwned for SetSubSlice<K> {
     type Owned = PrefixArraySet<K>;
 
     fn to_owned(&self) -> PrefixArraySet<K> {
@@ -259,7 +253,7 @@ impl<K: AsRef<str> + Clone> ToOwned for SetSubSlice<K> {
     }
 }
 
-impl<K: AsRef<str> + fmt::Debug> fmt::Debug for SetSubSlice<K> {
+impl<K: Borrow<str> + fmt::Debug> fmt::Debug for SetSubSlice<K> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "SetSubSlice")?;
         f.debug_set().entries(self.iter()).finish()
@@ -272,9 +266,9 @@ impl<K: AsRef<str> + fmt::Debug> fmt::Debug for SetSubSlice<K> {
 // SAFETY: this type must remain repr(transparent) to map::SubSlice<K, ()> for from_map_slice invariants
 #[repr(transparent)]
 #[derive(PartialEq, Eq)]
-pub struct SetSubSlice<K: AsRef<str>>(map::SubSlice<K, ()>);
+pub struct SetSubSlice<K: Borrow<str>>(map::SubSlice<K, ()>);
 
-impl<K: AsRef<str>> SetSubSlice<K> {
+impl<K: Borrow<str>> SetSubSlice<K> {
     /// creates a ref to Self from a ref to backing storage
     // bypass lint level
     #[allow(unsafe_code)]

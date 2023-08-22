@@ -1,6 +1,6 @@
 extern crate alloc;
 
-use core::iter::FusedIterator;
+use core::{borrow::Borrow, iter::FusedIterator};
 
 // TODO: impl TrustedLen when it becomes stable
 
@@ -165,7 +165,7 @@ impl<'a, K, V> DoubleEndedIterator for Drain<'a, K, V> {
     }
 }
 
-impl<K: AsRef<str>, V> IntoIterator for super::PrefixArray<K, V> {
+impl<K: Borrow<str>, V> IntoIterator for super::PrefixArray<K, V> {
     type Item = (K, V);
     type IntoIter = IntoIter<K, V>;
 
@@ -176,7 +176,7 @@ impl<K: AsRef<str>, V> IntoIterator for super::PrefixArray<K, V> {
 
 macro_rules! into_iter_gen {
     (for $t:ty where Item = $item:ty, IntoIter = $into_iter:ty, do $code:tt ) => {
-        impl<'a, K: AsRef<str>, V> IntoIterator for $t {
+        impl<'a, K: Borrow<str>, V> IntoIterator for $t {
             type Item = $item;
             type IntoIter = $into_iter;
 
@@ -193,7 +193,7 @@ into_iter_gen!(for &'a mut super::PrefixArray<K, V> where Item = (&'a K, &'a mut
 into_iter_gen!(for &'a super::SubSlice<K, V> where Item = (&'a K, &'a V), IntoIter = Iter<'a, K, V>, do iter);
 into_iter_gen!(for &'a mut super::SubSlice<K, V> where Item = (&'a K, &'a mut V), IntoIter = IterMut<'a, K, V>, do iter_mut);
 
-impl<K: AsRef<str>, V> core::iter::FromIterator<(K, V)> for super::PrefixArray<K, V> {
+impl<K: Borrow<str>, V> core::iter::FromIterator<(K, V)> for super::PrefixArray<K, V> {
     fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
         Self::from_vec_lossy(iter.into_iter().collect())
     }

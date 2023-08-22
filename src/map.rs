@@ -7,6 +7,7 @@ extern crate alloc;
 
 use alloc::{borrow::ToOwned, vec::Vec};
 use core::{
+    borrow::Borrow,
     cmp::Ordering,
     fmt, mem,
     ops::{Deref, DerefMut},
@@ -26,9 +27,9 @@ pub use iter::{Drain, IntoIter, Iter, IterMut};
 /// The main downside of a [`PrefixArray`] over a trie type datastructure is that insertions have a significant `O(n)` cost,
 /// so if you are adding multiple values over the lifetime of the [`PrefixArray`] it may become less efficient overall than a traditional tree.
 #[derive(PartialEq, Eq)]
-pub struct PrefixArray<K: AsRef<str>, V>(pub(crate) Vec<(K, V)>);
+pub struct PrefixArray<K: Borrow<str>, V>(pub(crate) Vec<(K, V)>);
 
-impl<K: AsRef<str> + fmt::Debug, V: fmt::Debug> fmt::Debug for PrefixArray<K, V> {
+impl<K: Borrow<str> + fmt::Debug, V: fmt::Debug> fmt::Debug for PrefixArray<K, V> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "PrefixArray")?;
         f.debug_map().entries(self.iter()).finish()
@@ -36,7 +37,7 @@ impl<K: AsRef<str> + fmt::Debug, V: fmt::Debug> fmt::Debug for PrefixArray<K, V>
 }
 
 // Manually impl to get clone_from
-impl<K: AsRef<str> + Clone, V: Clone> Clone for PrefixArray<K, V> {
+impl<K: Borrow<str> + Clone, V: Clone> Clone for PrefixArray<K, V> {
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
@@ -46,13 +47,13 @@ impl<K: AsRef<str> + Clone, V: Clone> Clone for PrefixArray<K, V> {
     }
 }
 
-impl<K: AsRef<str>, V> Default for PrefixArray<K, V> {
+impl<K: Borrow<str>, V> Default for PrefixArray<K, V> {
     fn default() -> Self {
         PrefixArray::new()
     }
 }
 
-impl<K: AsRef<str>, V> PrefixArray<K, V> {
+impl<K: Borrow<str>, V> PrefixArray<K, V> {
     /// Create a new empty [`PrefixArray`].
     ///
     /// This function will not allocate anything.
@@ -99,8 +100,8 @@ impl<K: AsRef<str>, V> PrefixArray<K, V> {
     /// This operation is `O(n log n)`.
     #[must_use]
     pub fn from_vec_lossy(mut v: Vec<(K, V)>) -> Self {
-        v.sort_unstable_by(|f, s| f.0.as_ref().cmp(s.0.as_ref()));
-        v.dedup_by(|f, s| f.0.as_ref() == s.0.as_ref());
+        v.sort_unstable_by(|f, s| f.0.borrow().cmp(s.0.borrow()));
+        v.dedup_by(|f, s| f.0.borrow() == s.0.borrow());
 
         Self(v)
     }
@@ -111,7 +112,7 @@ impl<K: AsRef<str>, V> PrefixArray<K, V> {
     ///
     /// This operation is `O(n)`.
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
-        match self.0.binary_search_by_key(&key.as_ref(), |s| s.0.as_ref()) {
+        match self.0.binary_search_by_key(&key.borrow(), |s| s.0.borrow()) {
             Err(idx) => {
                 self.0.insert(idx, (key, value));
                 None
@@ -150,7 +151,7 @@ impl<K: AsRef<str>, V> PrefixArray<K, V> {
     ///
     /// This operation is `O(log n)` if the key was not found, and `O(n)` if it was.
     pub fn remove_entry(&mut self, key: &str) -> Option<(K, V)> {
-        if let Ok(idx) = self.0.binary_search_by_key(&key, |s| s.0.as_ref()) {
+        if let Ok(idx) = self.0.binary_search_by_key(&key, |s| s.0.borrow()) {
             Some(self.0.remove(idx))
         } else {
             None
@@ -188,13 +189,13 @@ impl<K: AsRef<str>, V> PrefixArray<K, V> {
     pub(crate) fn from_unique_iter<T: IntoIterator<Item = (K, V)>>(v: T) -> Self {
         let mut unsorted = v.into_iter().collect::<Vec<(K, V)>>();
         // can't use by_key because of lifetime issues with as_ref
-        unsorted.sort_unstable_by(|f, s| f.0.as_ref().cmp(s.0.as_ref()));
+        unsorted.sort_unstable_by(|f, s| f.0.borrow().cmp(s.0.borrow()));
 
         Self(unsorted)
     }
 }
 
-impl<K: AsRef<str>, V> Extend<(K, V)> for PrefixArray<K, V> {
+impl<K: Borrow<str>, V> Extend<(K, V)> for PrefixArray<K, V> {
     /// Extends the [`PrefixArray`] with more values, overwriting any duplicate key's values in the map (will not update the key).
     ///
     /// It is currently unspecified if two identical keys are given, who are not already in the set, which K/V pair will be kept.
@@ -213,7 +214,7 @@ impl<K: AsRef<str>, V> Extend<(K, V)> for PrefixArray<K, V> {
         insert.reserve(iter.size_hint().0);
 
         for k in iter {
-            match self.0.binary_search_by_key(&k.0.as_ref(), |s| s.0.as_ref()) {
+            match self.0.binary_search_by_key(&k.0.borrow(), |s| s.0.borrow()) {
                 // add to insertion set
                 Err(idx) => insert.push((idx, k)),
                 // replace old value
@@ -224,10 +225,10 @@ impl<K: AsRef<str>, V> Extend<(K, V)> for PrefixArray<K, V> {
         }
 
         // presort by string so that identical indexes are mapped correctly
-        insert.sort_unstable_by(|(_, a), (_, b)| a.0.as_ref().cmp(b.0.as_ref()));
+        insert.sort_unstable_by(|(_, a), (_, b)| a.0.borrow().cmp(b.0.borrow()));
 
         // avoid duplicate K being inserted
-        insert.dedup_by(|(_, a), (_, b)| a.0.as_ref() == b.0.as_ref());
+        insert.dedup_by(|(_, a), (_, b)| a.0.borrow() == b.0.borrow());
 
         self.0.insert_many(insert);
     }
@@ -235,59 +236,53 @@ impl<K: AsRef<str>, V> Extend<(K, V)> for PrefixArray<K, V> {
 
 #[cfg(feature = "std")]
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-impl<K: AsRef<str>, V, H> From<std::collections::HashMap<K, V, H>> for PrefixArray<K, V> {
+impl<K: Borrow<str>, V, H> From<std::collections::HashMap<K, V, H>> for PrefixArray<K, V> {
     /// Performs a lossless conversion from a `HashMap<K, V>` to a `PrefixArray<K, V>` in `O(n log n)` time.
-    ///
-    /// This assumes the implementation of `AsRef<str>` is derived from the same data that the `Eq + Hash` implementation uses.
-    /// It is a logic error if this is untrue, and will render this datastructure useless.
     fn from(v: std::collections::HashMap<K, V, H>) -> Self {
         Self::from_unique_iter(v)
     }
 }
 
-impl<K: AsRef<str>, V> From<alloc::collections::BTreeMap<K, V>> for PrefixArray<K, V> {
+impl<K: Borrow<str>, V> From<alloc::collections::BTreeMap<K, V>> for PrefixArray<K, V> {
     /// Performs a lossless conversion from a `BTreeMap<K, V>` to a `PrefixArray<K, V>` in `O(n log n)` time.
-    ///
-    /// This assumes the implementation of `AsRef<str>` is derived from the same data that the `Ord` implementation uses.
-    /// It is a logic error if this is untrue, and will render this datastructure useless.
     fn from(v: alloc::collections::BTreeMap<K, V>) -> Self {
         Self::from_unique_iter(v)
     }
 }
 
-impl<K: AsRef<str>, V> From<PrefixArray<K, V>> for Vec<(K, V)> {
+impl<K: Borrow<str>, V> From<PrefixArray<K, V>> for Vec<(K, V)> {
     fn from(v: PrefixArray<K, V>) -> Vec<(K, V)> {
         v.0
     }
 }
 
-impl<K: AsRef<str>, V> Deref for PrefixArray<K, V> {
+impl<K: Borrow<str>, V> Deref for PrefixArray<K, V> {
     type Target = SubSlice<K, V>;
 
     fn deref(&self) -> &Self::Target {
-        SubSlice::from_slice(self.0.as_slice())
+        SubSlice::cast_from_slice(self.0.as_slice())
     }
 }
 
-impl<K: AsRef<str>, V> DerefMut for PrefixArray<K, V> {
+impl<K: Borrow<str>, V> DerefMut for PrefixArray<K, V> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        SubSlice::from_slice_mut(self.0.as_mut_slice())
+        SubSlice::cast_from_slice_mut(self.0.as_mut_slice())
     }
 }
 
-impl<K: AsRef<str>, V> core::borrow::Borrow<SubSlice<K, V>> for PrefixArray<K, V> {
+impl<K: Borrow<str>, V> core::borrow::Borrow<SubSlice<K, V>> for PrefixArray<K, V> {
     fn borrow(&self) -> &SubSlice<K, V> {
         self
     }
 }
 
-impl<K: AsRef<str>, V> core::borrow::BorrowMut<SubSlice<K, V>> for PrefixArray<K, V> {
+impl<K: Borrow<str>, V> core::borrow::BorrowMut<SubSlice<K, V>> for PrefixArray<K, V> {
     fn borrow_mut(&mut self) -> &mut SubSlice<K, V> {
         self
     }
 }
 
-impl<K: AsRef<str> + Clone, V: Clone> ToOwned for SubSlice<K, V> {
+impl<K: Borrow<str> + Clone, V: Clone> ToOwned for SubSlice<K, V> {
     type Owned = PrefixArray<K, V>;
 
     fn to_owned(&self) -> PrefixArray<K, V> {
@@ -300,7 +295,7 @@ impl<K: AsRef<str> + Clone, V: Clone> ToOwned for SubSlice<K, V> {
     }
 }
 
-impl<K: AsRef<str> + fmt::Debug, V: fmt::Debug> fmt::Debug for SubSlice<K, V> {
+impl<K: Borrow<str> + fmt::Debug, V: fmt::Debug> fmt::Debug for SubSlice<K, V> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "SubSlice")?;
         f.debug_map().entries(self.iter()).finish()
@@ -313,13 +308,32 @@ impl<K: AsRef<str> + fmt::Debug, V: fmt::Debug> fmt::Debug for SubSlice<K, V> {
 // SAFETY: this type must remain repr(transparent) to [(K, V)] for from_slice(_mut) invariants
 #[repr(transparent)]
 #[derive(PartialEq, Eq)]
-pub struct SubSlice<K: AsRef<str>, V>(pub(crate) [(K, V)]);
+pub struct SubSlice<K: Borrow<str>, V>(pub(crate) [(K, V)]);
 
-impl<K: AsRef<str>, V> SubSlice<K, V> {
+#[derive(Debug)]
+/// Error indicating that duplicate entries were present in a slice passed to [`SubSlice::from_mut_slice`].
+/// This error also contains the duplicate string in question.
+pub struct DuplicatesPresent<'a>(&'a str);
+
+#[cfg(feature = "std")]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+impl std::error::Error for DuplicatesPresent<'_> {}
+
+impl fmt::Display for DuplicatesPresent<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "duplicate key found while attempting conversion to SubSlice: {}",
+            self.0
+        )
+    }
+}
+
+impl<K: Borrow<str>, V> SubSlice<K, V> {
     /// Generates a Self from a ref to backing storage
     // bypass lint level
     #[allow(unsafe_code)]
-    const fn from_slice(v: &[(K, V)]) -> &Self {
+    const fn cast_from_slice(v: &[(K, V)]) -> &Self {
         // SAFETY: we are repr(transparent) with [(K, V)], and the lifetime/mutability remains identical
         unsafe { mem::transmute(v) }
     }
@@ -327,14 +341,14 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
     /// Generates a Self from a mut ref to backing storage
     // bypass lint level
     #[allow(unsafe_code)]
-    fn from_slice_mut(v: &mut [(K, V)]) -> &mut Self {
+    fn cast_from_slice_mut(v: &mut [(K, V)]) -> &mut Self {
         // SAFETY: we are repr(transparent) with [(K, V)], and the lifetime/mutability remains identical
         unsafe { &mut *(v as *mut [(K, V)] as *mut Self) }
     }
 
     /// reslices self, panics on oob
     fn reslice<I: core::slice::SliceIndex<[(K, V)], Output = [(K, V)]>>(&self, i: I) -> &Self {
-        Self::from_slice(&self.as_slice()[i])
+        Self::cast_from_slice(&self.as_slice()[i])
     }
 
     /// reslices self, panics on oob
@@ -342,12 +356,59 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
         &mut self,
         i: I,
     ) -> &mut Self {
-        Self::from_slice_mut(&mut self.0[i])
+        Self::cast_from_slice_mut(&mut self.0[i])
     }
 
     /// Returns inner contents as immutable slice
     const fn as_slice(&self) -> &[(K, V)] {
         &self.0
+    }
+
+    /// Makes a mutable ref to a `SubSlice` from a raw data slice. Sorts data internally.
+    ///
+    /// This operation is `O(n log n)`.
+    ///
+    /// # Errors
+    /// This will return `DuplicatesPresent` if any duplicate keys are present in the slice.
+    ///
+    /// # Examples
+    /// ```rust
+    /// # use prefix_array::SubSlice;
+    /// // Find items with prefix "a" using a stack allocated array
+    /// let mut data = [("abcde", 0), ("foo", 1), ("baz", 2)];
+    ///
+    /// let subslice = SubSlice::from_mut_slice(&mut data).unwrap();
+    ///
+    /// assert_eq!(subslice.find_all_with_prefix("a").to_vec(), &[("abcde", 0)]);
+    /// ```
+    /// ```rust
+    /// # use prefix_array::SubSlice;
+    /// // Duplicates will raise an error
+    /// let mut data = [("a", 5), ("b", 2), ("a", 6)];
+    ///
+    /// assert!(SubSlice::from_mut_slice(&mut data).is_err());
+    /// ```
+    ///
+    pub fn from_mut_slice(data: &mut [(K, V)]) -> Result<&mut Self, DuplicatesPresent<'_>> {
+        data.sort_unstable_by(|a, b| a.0.borrow().cmp(b.0.borrow()));
+
+        if data.len() <= 1 {
+            return Ok(Self::cast_from_slice_mut(data));
+        }
+
+        let mut error = None;
+
+        for (idx, d) in data.windows(2).enumerate() {
+            if d[0].0.borrow() == d[1].0.borrow() {
+                error = Some(idx);
+                break;
+            }
+        }
+
+        match error {
+            Some(idx) => Err(DuplicatesPresent(data[idx].0.borrow())),
+            None => Ok(Self::cast_from_slice_mut(data)),
+        }
     }
 
     /// An immutable iterator over all the elements in this slice in sorted-by-key order.
@@ -373,16 +434,16 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
         }
 
         if let Ok(start) = self.as_slice().binary_search_by(|s| {
-            if s.0.as_ref().starts_with(prefix) {
+            if s.0.borrow().starts_with(prefix) {
                 Ordering::Equal
             } else {
-                s.0.as_ref().cmp(prefix)
+                s.0.borrow().cmp(prefix)
             }
         }) {
             let min =
-                self.as_slice()[..start].partition_point(|s| !s.0.as_ref().starts_with(prefix));
+                self.as_slice()[..start].partition_point(|s| !s.0.borrow().starts_with(prefix));
             let max = self.as_slice()[start..]
-                .partition_point(|s| s.0.as_ref().starts_with(prefix))
+                .partition_point(|s| s.0.borrow().starts_with(prefix))
                 + start;
 
             min..max
@@ -452,9 +513,9 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
     ///
     /// This operation is `O(1)`, but it is not computationally free.
     pub fn common_prefix(&self) -> &str {
-        let Some(first) = self.as_slice().first().map(|s| s.0.as_ref()) else { return ""; };
+        let Some(first) = self.as_slice().first().map(|s| s.0.borrow()) else { return ""; };
 
-        let Some(last) = self.as_slice().last().map(|s| s.0.as_ref()) else { return "" };
+        let Some(last) = self.as_slice().last().map(|s| s.0.borrow()) else { return "" };
 
         let last_idx = first.len().min(last.len());
 
@@ -487,7 +548,7 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
     /// ```
     pub fn contains_key(&self, key: &str) -> bool {
         self.as_slice()
-            .binary_search_by_key(&key, |s| s.0.as_ref())
+            .binary_search_by_key(&key, |s| s.0.borrow())
             .is_ok()
     }
 
@@ -495,7 +556,7 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
     ///
     /// This operation is `O(log n)`.
     pub fn get(&self, key: &str) -> Option<&V> {
-        match self.as_slice().binary_search_by_key(&key, |s| s.0.as_ref()) {
+        match self.as_slice().binary_search_by_key(&key, |s| s.0.borrow()) {
             Ok(idx) => Some(&self.as_slice()[idx].1),
             Err(_) => None,
         }
@@ -505,7 +566,7 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
     ///
     /// This operation is `O(log n)`.
     pub fn get_mut(&mut self, key: &str) -> Option<&mut V> {
-        match self.0.binary_search_by_key(&key, |s| s.0.as_ref()) {
+        match self.0.binary_search_by_key(&key, |s| s.0.borrow()) {
             Ok(idx) => Some(&mut self.0[idx].1),
             Err(_) => None,
         }
@@ -515,7 +576,7 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
     ///
     /// This operation is `O(log n)`.
     pub fn get_key_value(&self, key: &str) -> Option<(&K, &V)> {
-        match self.0.binary_search_by_key(&key, |s| s.0.as_ref()) {
+        match self.0.binary_search_by_key(&key, |s| s.0.borrow()) {
             Ok(idx) => Some({
                 let (k, v) = &self.0[idx];
                 (k, v)
@@ -553,7 +614,7 @@ impl<K: AsRef<str>, V> SubSlice<K, V> {
 
         for (k, _) in self.as_slice() {
             if let Some(prev) = last {
-                assert!(prev.as_ref() < k.as_ref());
+                assert!(prev.borrow() < k.borrow());
             }
 
             last = Some(k);

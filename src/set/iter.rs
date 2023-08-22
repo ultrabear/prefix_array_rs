@@ -1,6 +1,6 @@
 extern crate alloc;
 
-use core::iter::FusedIterator;
+use core::{borrow::Borrow, iter::FusedIterator};
 
 /// Iterator from a [`PrefixArraySet`][super::PrefixArraySet].
 pub struct IntoIter<K>(crate::map::IntoIter<K, ()>);
@@ -108,7 +108,7 @@ impl<'a, K> DoubleEndedIterator for Drain<'a, K> {
     }
 }
 
-impl<K: AsRef<str>> IntoIterator for super::PrefixArraySet<K> {
+impl<K: Borrow<str>> IntoIterator for super::PrefixArraySet<K> {
     type Item = K;
     type IntoIter = IntoIter<K>;
 
@@ -117,7 +117,7 @@ impl<K: AsRef<str>> IntoIterator for super::PrefixArraySet<K> {
     }
 }
 
-impl<'a, K: AsRef<str>> IntoIterator for &'a super::PrefixArraySet<K> {
+impl<'a, K: Borrow<str>> IntoIterator for &'a super::PrefixArraySet<K> {
     type Item = &'a K;
     type IntoIter = Iter<'a, K>;
 
@@ -126,7 +126,7 @@ impl<'a, K: AsRef<str>> IntoIterator for &'a super::PrefixArraySet<K> {
     }
 }
 
-impl<'a, K: AsRef<str>> IntoIterator for &'a super::SetSubSlice<K> {
+impl<'a, K: Borrow<str>> IntoIterator for &'a super::SetSubSlice<K> {
     type Item = &'a K;
     type IntoIter = Iter<'a, K>;
 
@@ -135,7 +135,7 @@ impl<'a, K: AsRef<str>> IntoIterator for &'a super::SetSubSlice<K> {
     }
 }
 
-impl<K: AsRef<str>> core::iter::FromIterator<K> for super::PrefixArraySet<K> {
+impl<K: Borrow<str>> core::iter::FromIterator<K> for super::PrefixArraySet<K> {
     fn from_iter<T: IntoIterator<Item = K>>(iter: T) -> Self {
         Self::from_vec_lossy(iter.into_iter().collect())
     }

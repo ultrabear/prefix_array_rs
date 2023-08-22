@@ -159,3 +159,14 @@ fn size_overflow() {
 
     vec![].insert_many(vec![(1, 2u8)]);
 }
+
+#[test]
+fn assert_zsts() {
+    use alloc::vec;
+
+    vec![(), (), ()].insert_many(vec![(0, ()), (1, ()), (2, ()), (3, ()), (1, ())]);
+
+    vec![(), ()].insert_many(vec![(0, ()), (1, ()), (2, ()), (1, ())]);
+
+    vec![].insert_many(vec![(0, ())]);
+}
