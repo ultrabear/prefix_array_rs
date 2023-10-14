@@ -98,7 +98,7 @@ impl<T> InsertMany<T> for Vec<T> {
                     // We use copy here and NOT copy_nonoverlapping intentionally, as the two regions may overlap
                     unsafe {
                         ptr::copy(
-                            v_ptr.add(idx) as *const _,
+                            v_ptr.add(idx).cast_const(),
                             v_ptr.add(my_idx + 1),
                             written_to - (my_idx + 1),
                         );

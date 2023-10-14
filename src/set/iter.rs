@@ -10,7 +10,7 @@ impl<K> Iterator for IntoIter<K> {
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|(k, _)| k)
+        self.0.next().map(|(k, ())| k)
     }
 
     #[inline]
@@ -33,7 +33,7 @@ impl<K> ExactSizeIterator for IntoIter<K> {}
 impl<K> DoubleEndedIterator for IntoIter<K> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.0.next_back().map(|(k, _)| k)
+        self.0.next_back().map(|(k, ())| k)
     }
 }
 
@@ -45,7 +45,7 @@ impl<'a, K> Iterator for Iter<'a, K> {
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|(k, _)| k)
+        self.0.next().map(|(k, ())| k)
     }
 
     #[inline]
@@ -68,7 +68,7 @@ impl<'a, K> ExactSizeIterator for Iter<'a, K> {}
 impl<'a, K> DoubleEndedIterator for Iter<'a, K> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.0.next_back().map(|(k, _)| k)
+        self.0.next_back().map(|(k, ())| k)
     }
 }
 
@@ -81,7 +81,7 @@ impl<'a, K> Iterator for Drain<'a, K> {
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|(k, _)| k)
+        self.0.next().map(|(k, ())| k)
     }
 
     #[inline]
@@ -104,7 +104,7 @@ impl<'a, K> ExactSizeIterator for Drain<'a, K> {}
 impl<'a, K> DoubleEndedIterator for Drain<'a, K> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.0.next_back().map(|(k, _)| k)
+        self.0.next_back().map(|(k, ())| k)
     }
 }
 

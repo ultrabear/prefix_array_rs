@@ -235,7 +235,7 @@ impl<K: Borrow<str>> From<alloc::collections::BTreeSet<K>> for PrefixArraySet<K>
 
 impl<K: Borrow<str>> From<PrefixArraySet<K>> for Vec<K> {
     fn from(v: PrefixArraySet<K>) -> Vec<K> {
-        Vec::from(v.0).into_iter().map(|(k, _)| k).collect()
+        Vec::from(v.0).into_iter().map(|(k, ())| k).collect()
     }
 }
 
@@ -301,7 +301,7 @@ impl<K: Borrow<str>> SetSubSlice<K> {
     where
         K: Clone,
     {
-        (self.0).0.iter().map(|(k, _)| k.clone()).collect()
+        (self.0).0.iter().map(|(k, ())| k.clone()).collect()
     }
 
     /// Returns the `SetSubSlice` where all `K` have the same prefix `prefix`.
