@@ -29,11 +29,11 @@ pub(super) trait InsertMany<T> {
     ///  (it may be **equal** to the length of the list to be appended to the end though (see: [`Vec::extend`] if you wish to do only that)).
     ///
     /// This will panic if self.len() + insert.len() overflows.
-    fn insert_many(&mut self, insert: Vec<(usize, T)>);
+    fn insert_many(&mut self, insert: &mut Vec<(usize, T)>);
 }
 
 impl<T> InsertMany<T> for Vec<T> {
-    fn insert_many(&mut self, mut insert: Vec<(usize, T)>) {
+    fn insert_many(&mut self, insert: &mut Vec<(usize, T)>) {
         // PRECOND: we need enough space to add the new values
         self.reserve(insert.len());
 
@@ -69,7 +69,7 @@ impl<T> InsertMany<T> for Vec<T> {
             // raw_vec[written_to..] is written to
             let mut written_to = new_len;
 
-            for (idx, t) in insert.into_iter().rev() {
+            for (idx, t) in insert.drain(..).rev() {
                 // idx will never be greater than original_len because we sorted and checked the max value
                 // this relies on TrustedOrd with usize, but that must be true
                 insert_left -= 1;
@@ -123,7 +123,7 @@ fn oh_boy() {
 
     let mut v = std::vec![1, 2, 3, 4];
 
-    v.insert_many(std::vec![
+    v.insert_many(&mut std::vec![
         (0, 8i32),
         (0, 7),
         (1, 6),
@@ -134,21 +134,21 @@ fn oh_boy() {
 
     assert_eq!(v, &[8, 7, 1, 6, 2, 3, 11, 4, 5, 10]);
 
-    v.insert_many([(0, 0)].into());
+    v.insert_many(&mut [(0, 0)].into());
 
     assert_eq!(v, &[0, 8, 7, 1, 6, 2, 3, 11, 4, 5, 10]);
 
-    v.insert_many(std::vec![(v.len(), 32)]);
+    v.insert_many(&mut std::vec![(v.len(), 32)]);
 
     assert_eq!(v, &[0, 8, 7, 1, 6, 2, 3, 11, 4, 5, 10, 32]);
 
-    Vec::<u8>::new().insert_many(Vec::new());
+    Vec::<u8>::new().insert_many(&mut Vec::new());
 
-    Vec::<u8>::new().insert_many(std::vec![(0, 1), (0, 2), (0, 3)]);
+    Vec::<u8>::new().insert_many(&mut std::vec![(0, 1), (0, 2), (0, 3)]);
 
-    Vec::<u8>::from([1, 2, 3]).insert_many(Vec::new());
+    Vec::<u8>::from([1, 2, 3]).insert_many(&mut Vec::new());
 
-    Vec::<u8>::from([1]).insert_many(Vec::new());
+    Vec::<u8>::from([1]).insert_many(&mut Vec::new());
 }
 
 #[test]
@@ -157,16 +157,16 @@ fn size_overflow() {
     extern crate std;
     use alloc::vec;
 
-    vec![].insert_many(vec![(1, 2u8)]);
+    vec![].insert_many(&mut vec![(1, 2u8)]);
 }
 
 #[test]
 fn assert_zsts() {
     use alloc::vec;
 
-    vec![(), (), ()].insert_many(vec![(0, ()), (1, ()), (2, ()), (3, ()), (1, ())]);
+    vec![(), (), ()].insert_many(&mut vec![(0, ()), (1, ()), (2, ()), (3, ()), (1, ())]);
 
-    vec![(), ()].insert_many(vec![(0, ()), (1, ()), (2, ()), (1, ())]);
+    vec![(), ()].insert_many(&mut vec![(0, ()), (1, ()), (2, ()), (1, ())]);
 
-    vec![].insert_many(vec![(0, ())]);
+    vec![].insert_many(&mut vec![(0, ())]);
 }

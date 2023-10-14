@@ -18,6 +18,8 @@ use vec_ext::InsertMany;
 mod iter;
 pub use iter::{Drain, IntoIter, Iter, IterMut};
 
+use crate::shared::ScratchSpace;
+
 /// A generic search-by-prefix array designed to find strings with common prefixes in `O(log n)` time, and easily search on subslices to refine a previous search.
 ///
 /// The generic parameter is mainly in place so that `&'a str`, `String`, and `&'static str` may all be used for the backing storage.
@@ -185,29 +187,15 @@ impl<K: Borrow<str>, V> PrefixArray<K, V> {
         self.0.shrink_to(min_capacity);
     }
 
-    /// Makes a `PrefixArray` from an iterator in which all key items are unique
-    pub(crate) fn from_unique_iter<T: IntoIterator<Item = (K, V)>>(v: T) -> Self {
-        let mut unsorted = v.into_iter().collect::<Vec<(K, V)>>();
-        // can't use by_key because of lifetime issues with as_ref
-        unsorted.sort_unstable_by(|f, s| f.0.borrow().cmp(s.0.borrow()));
-
-        Self(unsorted)
-    }
-}
-
-impl<K: Borrow<str>, V> Extend<(K, V)> for PrefixArray<K, V> {
-    /// Extends the [`PrefixArray`] with more values, overwriting any duplicate key's values in the map (will not update the key).
-    ///
-    /// It is currently unspecified if two identical keys are given, who are not already in the set, which K/V pair will be kept.
-    ///
-    /// This operation is `O(n + k log k)` where k is the number of elements in the iterator.
-    fn extend<T>(&mut self, iter: T)
+    /// Inner method of `extend_with` that allows passing [`PrefixArraySet`](super::PrefixArraySet)
+    /// values in.
+    pub(crate) fn extend_with_raw<I>(&mut self, insert: &mut Vec<(usize, (K, V))>, iter: I)
     where
-        T: IntoIterator<Item = (K, V)>,
+        I: IntoIterator<Item = (K, V)>,
     {
         let iter = iter.into_iter();
 
-        let mut insert = Vec::new();
+        insert.clear();
 
         // speculative optimization, assume that most items are going to be newly inserted
         // this will over allocate when that is untrue
@@ -231,6 +219,39 @@ impl<K: Borrow<str>, V> Extend<(K, V)> for PrefixArray<K, V> {
         insert.dedup_by(|(_, a), (_, b)| a.0.borrow() == b.0.borrow());
 
         self.0.insert_many(insert);
+    }
+
+    /// Extends the collection with items from an iterator, this is functionally equivalent to the
+    /// `Extend` implementation and carries the same edge cases, but it allows passing a scratch
+    /// space to potentially avoid reallocations when calling `extend_with` multiple times.
+    pub fn extend_with<I>(&mut self, scratch: &mut ScratchSpace<Self>, iter: I)
+    where
+        I: IntoIterator<Item = (K, V)>,
+    {
+        self.extend_with_raw(&mut scratch.0, iter);
+    }
+
+    /// Makes a `PrefixArray` from an iterator in which all key items are unique
+    pub(crate) fn from_unique_iter<T: IntoIterator<Item = (K, V)>>(v: T) -> Self {
+        let mut unsorted = v.into_iter().collect::<Vec<(K, V)>>();
+        // can't use by_key because of lifetime issues with as_ref
+        unsorted.sort_unstable_by(|f, s| f.0.borrow().cmp(s.0.borrow()));
+
+        Self(unsorted)
+    }
+}
+
+impl<K: Borrow<str>, V> Extend<(K, V)> for PrefixArray<K, V> {
+    /// Extends the [`PrefixArray`] with more values, overwriting any duplicate key's values in the map (will not update the key).
+    ///
+    /// It is currently unspecified if two identical keys are given, who are not already in the set, which K/V pair will be kept.
+    ///
+    /// This operation is `O(n + k log k)` where k is the number of elements in the iterator.
+    fn extend<T>(&mut self, iter: T)
+    where
+        T: IntoIterator<Item = (K, V)>,
+    {
+        self.extend_with(&mut ScratchSpace::new(), iter);
     }
 }
 
@@ -513,9 +534,13 @@ impl<K: Borrow<str>, V> SubSlice<K, V> {
     ///
     /// This operation is `O(1)`, but it is not computationally free.
     pub fn common_prefix(&self) -> &str {
-        let Some(first) = self.as_slice().first().map(|s| s.0.borrow()) else { return ""; };
+        let Some(first) = self.as_slice().first().map(|s| s.0.borrow()) else {
+            return "";
+        };
 
-        let Some(last) = self.as_slice().last().map(|s| s.0.borrow()) else { return "" };
+        let Some(last) = self.as_slice().last().map(|s| s.0.borrow()) else {
+            return "";
+        };
 
         let last_idx = first.len().min(last.len());
 

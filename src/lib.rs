@@ -44,3 +44,5 @@ pub use map::{PrefixArray, SubSlice};
 
 pub mod set;
 pub use set::{PrefixArraySet, SetSubSlice};
+
+pub mod shared;

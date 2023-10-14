@@ -11,6 +11,8 @@ use core::{borrow::Borrow, fmt, ops::Deref};
 mod iter;
 pub use iter::{Drain, IntoIter, Iter};
 
+use crate::shared::ScratchSpace;
+
 use super::map;
 
 /// A generic search-by-prefix array designed to find strings with common prefixes in `O(log n)` time, and easily search on subslices to refine a previous search.
@@ -182,6 +184,17 @@ impl<K: Borrow<str>> PrefixArraySet<K> {
         self.0.shrink_to(min_capacity);
     }
 
+    /// Extends the collection with items from an iterator, this is functionally equivalent to the
+    /// `Extend` implementation and carries the same edge cases, but it allows passing a scratch
+    /// space to potentially avoid reallocations when calling `extend_with` multiple times.
+    pub fn extend_with<I>(&mut self, scratch: &mut ScratchSpace<Self>, iter: I)
+    where
+        I: IntoIterator<Item = K>,
+    {
+        self.0
+            .extend_with_raw(&mut scratch.0, iter.into_iter().map(|k| (k, ())));
+    }
+
     /// Makes a `PrefixArraySet` from an iterator in which all key items are unique
     fn from_unique_iter<T: IntoIterator<Item = K>>(v: T) -> Self {
         Self(map::PrefixArray::from_unique_iter(
@@ -200,7 +213,7 @@ impl<K: Borrow<str>> Extend<K> for PrefixArraySet<K> {
     where
         T: IntoIterator<Item = K>,
     {
-        self.0.extend(iter.into_iter().map(|k| (k, ())));
+        self.extend_with(&mut ScratchSpace::new(), iter);
     }
 }
 
