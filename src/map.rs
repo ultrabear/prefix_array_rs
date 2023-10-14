@@ -195,6 +195,9 @@ impl<K: Borrow<str>, V> PrefixArray<K, V> {
     {
         let iter = iter.into_iter();
 
+        // clear for correctness, a scratchspace should become empty after an insert_many call and
+        // there is no other way to push to it than this method, but we should prevent the
+        // possibility here anyways
         insert.clear();
 
         // speculative optimization, assume that most items are going to be newly inserted
