@@ -711,4 +711,17 @@ mod test {
 
         assert_eq!(v.len(), 1);
     }
+
+    #[test]
+    fn extend_with() {
+        let mut v = PrefixArray::from_iter([("a", 0), ("b", 2)]);
+        let mut scratch = ScratchSpace::with_capacity(2);
+
+        v.extend_with(&mut scratch, [("c", 4), ("d", 4)]);
+
+        assert_eq!(v.len(), 4);
+
+        assert!(scratch.0.is_empty());
+        assert_eq!(scratch.0.capacity(), 2);
+    }
 }
