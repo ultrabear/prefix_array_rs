@@ -18,6 +18,11 @@
 //!
 //! For an already partially filled `PrefixArray(Set)` that you wish to insert multiple items into, consider the `Extend` implementation, which is specifically designed for this purpose.
 //!
+//! If you have a partially filled `PrefixArray(Set)` and need to call `Extend` multiple times, but
+//! can share state between each call, consider using `ScratchSpace` and the `extend_with` method.
+//! This can avoid excessive allocations that the `Extend` method would otherwise have (as it needs
+//! to allocate to insert many items at once).
+//!
 //! ## Basic usage
 //! ```rust
 //! use prefix_array::PrefixArray;
