@@ -6,7 +6,7 @@ use core::mem::MaybeUninit;
 use core::ptr;
 
 /// A trait to insert many items into one Vec at once
-pub(super) trait InsertMany<T> {
+pub(crate) trait InsertMany<T> {
     /// Inserts many T at any index, will insert in a stable sorted order.
     ///
     /// Each index is inserted via the original lists order, or, this is functionally equivalent to:

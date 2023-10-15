@@ -13,12 +13,11 @@ use core::{
     ops::{Deref, DerefMut},
 };
 
-mod vec_ext;
-use vec_ext::InsertMany;
+pub(crate) mod vec_ext;
 mod iter;
 pub use iter::{Drain, IntoIter, Iter, IterMut};
 
-use crate::shared::ScratchSpace;
+use crate::shared::{PrefixOwned, ScratchSpace};
 
 /// A generic search-by-prefix array designed to find strings with common prefixes in `O(log n)` time, and easily search on subslices to refine a previous search.
 ///
@@ -101,11 +100,8 @@ impl<K: Borrow<str>, V> PrefixArray<K, V> {
     ///
     /// This operation is `O(n log n)`.
     #[must_use]
-    pub fn from_vec_lossy(mut v: Vec<(K, V)>) -> Self {
-        v.sort_unstable_by(|f, s| f.0.borrow().cmp(s.0.borrow()));
-        v.dedup_by(|f, s| f.0.borrow() == s.0.borrow());
-
-        Self(v)
+    pub fn from_vec_lossy(v: Vec<(K, V)>) -> Self {
+        Self::from_vec_lossy_impl(v)
     }
 
     /// Inserts the given K/V pair into the [`PrefixArray`], returning the old V if one was present for this K.
@@ -114,13 +110,7 @@ impl<K: Borrow<str>, V> PrefixArray<K, V> {
     ///
     /// This operation is `O(n)`.
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
-        match self.0.binary_search_by_key(&key.borrow(), |s| s.0.borrow()) {
-            Err(idx) => {
-                self.0.insert(idx, (key, value));
-                None
-            }
-            Ok(idx) => Some(mem::replace(&mut self.0[idx].1, value)),
-        }
+        self.insert_impl((key, value))
     }
 
     /// Removes all values with the prefix provided, shifting the array in the process to account for the empty space.
@@ -153,11 +143,7 @@ impl<K: Borrow<str>, V> PrefixArray<K, V> {
     ///
     /// This operation is `O(log n)` if the key was not found, and `O(n)` if it was.
     pub fn remove_entry(&mut self, key: &str) -> Option<(K, V)> {
-        if let Ok(idx) = self.0.binary_search_by_key(&key, |s| s.0.borrow()) {
-            Some(self.0.remove(idx))
-        } else {
-            None
-        }
+        self.remove_entry_impl(key)
     }
 
     /// Returns the total capacity that the [`PrefixArray`] has.
@@ -193,35 +179,7 @@ impl<K: Borrow<str>, V> PrefixArray<K, V> {
     where
         I: IntoIterator<Item = (K, V)>,
     {
-        let iter = iter.into_iter();
-
-        // clear for correctness, a scratchspace should become empty after an insert_many call and
-        // there is no other way to push to it than this method, but we should prevent the
-        // possibility here anyways
-        insert.clear();
-
-        // speculative optimization, assume that most items are going to be newly inserted
-        // this will over allocate when that is untrue
-        insert.reserve(iter.size_hint().0);
-
-        for k in iter {
-            match self.0.binary_search_by_key(&k.0.borrow(), |s| s.0.borrow()) {
-                // add to insertion set
-                Err(idx) => insert.push((idx, k)),
-                // replace old value
-                Ok(idx) => {
-                    self.0[idx].1 = k.1;
-                }
-            }
-        }
-
-        // presort by string so that identical indexes are mapped correctly
-        insert.sort_unstable_by(|(_, a), (_, b)| a.0.borrow().cmp(b.0.borrow()));
-
-        // avoid duplicate K being inserted
-        insert.dedup_by(|(_, a), (_, b)| a.0.borrow() == b.0.borrow());
-
-        self.0.insert_many(insert);
+        self.extend_with_impl(insert, iter);
     }
 
     /// Extends the collection with items from an iterator, this is functionally equivalent to the
@@ -236,11 +194,7 @@ impl<K: Borrow<str>, V> PrefixArray<K, V> {
 
     /// Makes a `PrefixArray` from an iterator in which all key items are unique
     pub(crate) fn from_unique_iter<T: IntoIterator<Item = (K, V)>>(v: T) -> Self {
-        let mut unsorted = v.into_iter().collect::<Vec<(K, V)>>();
-        // can't use by_key because of lifetime issues with as_ref
-        unsorted.sort_unstable_by(|f, s| f.0.borrow().cmp(s.0.borrow()));
-
-        Self(unsorted)
+        Self::from_unique_iter_impl(v)
     }
 }
 
