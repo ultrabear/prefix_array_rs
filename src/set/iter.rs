@@ -3,14 +3,14 @@ extern crate alloc;
 use core::{borrow::Borrow, iter::FusedIterator};
 
 /// Iterator from a [`PrefixArraySet`][super::PrefixArraySet].
-pub struct IntoIter<K>(crate::map::IntoIter<K, ()>);
+pub struct IntoIter<K>(alloc::vec::IntoIter<K>);
 
 impl<K> Iterator for IntoIter<K> {
     type Item = K;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|(k, ())| k)
+        self.0.next()
     }
 
     #[inline]
@@ -33,19 +33,19 @@ impl<K> ExactSizeIterator for IntoIter<K> {}
 impl<K> DoubleEndedIterator for IntoIter<K> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.0.next_back().map(|(k, ())| k)
+        self.0.next_back()
     }
 }
 
 /// Immutable view Iterator from a [`PrefixArraySet`][super::PrefixArraySet] or [`SetSubSlice`][super::SetSubSlice]
-pub struct Iter<'a, K>(pub(super) crate::map::Iter<'a, K, ()>);
+pub struct Iter<'a, K>(pub(super) core::slice::Iter<'a, K>);
 
 impl<'a, K> Iterator for Iter<'a, K> {
     type Item = &'a K;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|(k, ())| k)
+        self.0.next()
     }
 
     #[inline]
@@ -68,20 +68,20 @@ impl<'a, K> ExactSizeIterator for Iter<'a, K> {}
 impl<'a, K> DoubleEndedIterator for Iter<'a, K> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.0.next_back().map(|(k, ())| k)
+        self.0.next_back()
     }
 }
 
 /// A Draining Iterator of some or all elements of a [`PrefixArraySet`][super::PrefixArraySet].
 ///  Holds a mutable reference to the parent `PrefixArraySet`
-pub struct Drain<'a, K>(pub(super) crate::map::Drain<'a, K, ()>);
+pub struct Drain<'a, K>(pub(super) alloc::vec::Drain<'a, K>);
 
 impl<'a, K> Iterator for Drain<'a, K> {
     type Item = K;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|(k, ())| k)
+        self.0.next()
     }
 
     #[inline]
@@ -104,7 +104,7 @@ impl<'a, K> ExactSizeIterator for Drain<'a, K> {}
 impl<'a, K> DoubleEndedIterator for Drain<'a, K> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.0.next_back().map(|(k, ())| k)
+        self.0.next_back()
     }
 }
 

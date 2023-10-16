@@ -8,7 +8,6 @@ extern crate alloc;
 use alloc::{borrow::ToOwned, vec::Vec};
 use core::{
     borrow::Borrow,
-    cmp::Ordering,
     fmt, mem,
     ops::{Deref, DerefMut},
 };

@@ -25,7 +25,7 @@ mod sealed {
 
 use sealed::PrefixMapOrSet;
 
-use crate::{PrefixArray, PrefixArraySet, SubSlice};
+use crate::{PrefixArray, PrefixArraySet, SetSubSlice, SubSlice};
 
 /// Scratch space for the `extend_with` methods on [`PrefixArray`](super::PrefixArray) and [`PrefixArraySet`](super::PrefixArraySet)
 ///
@@ -54,7 +54,7 @@ impl<T: PrefixMapOrSet> ScratchSpace<T> {
     }
 }
 
-/// A trait that abstracts over PrefixArray and PrefixArraySet owned variants
+/// A trait that abstracts over `PrefixArray` and `PrefixArraySet` owned variants
 /// This allows defining implementations once
 pub(crate) trait PrefixOwned<V>: Sized {
     type Data;
@@ -175,7 +175,6 @@ impl<K: Borrow<str>, V> PrefixOwned<V> for PrefixArray<K, V> {
     }
 }
 
-/*
 impl<K: Borrow<str>> PrefixOwned<()> for PrefixArraySet<K> {
     type Data = K;
 
@@ -194,11 +193,10 @@ impl<K: Borrow<str>> PrefixOwned<()> for PrefixArraySet<K> {
         &mut self.0
     }
 }
-*/
 
 use core::slice::SliceIndex;
 
-struct DuplicatesPresent<'a>(pub(crate) &'a str);
+pub(crate) struct DuplicatesPresent<'a>(pub(crate) &'a str);
 
 pub(crate) trait PrefixBorrowed {
     type Data;
@@ -353,5 +351,29 @@ impl<K: Borrow<str>, V> PrefixBorrowed for SubSlice<K, V> {
 
     fn as_str(v: &Self::Data) -> &str {
         v.0.borrow()
+    }
+}
+
+impl<K: Borrow<str>> PrefixBorrowed for SetSubSlice<K> {
+    type Data = K;
+
+    fn get_mut_slice(&mut self) -> &mut [Self::Data] {
+        &mut self.0
+    }
+
+    fn get_slice(&self) -> &[Self::Data] {
+        &self.0
+    }
+
+    fn cast_from_slice_mut(s: &mut [Self::Data]) -> &mut Self {
+        Self::cast_from_slice_mut_core(s)
+    }
+
+    fn cast_from_slice(s: &[Self::Data]) -> &Self {
+        Self::cast_from_slice_core(s)
+    }
+
+    fn as_str(v: &Self::Data) -> &str {
+        v.borrow()
     }
 }

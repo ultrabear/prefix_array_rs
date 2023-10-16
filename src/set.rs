@@ -11,9 +11,7 @@ use core::{borrow::Borrow, fmt, ops::Deref};
 mod iter;
 pub use iter::{Drain, IntoIter, Iter};
 
-use crate::shared::ScratchSpace;
-
-use super::map;
+use crate::shared::{PrefixBorrowed, PrefixOwned, ScratchSpace};
 
 /// A generic search-by-prefix array designed to find strings with common prefixes in `O(log n)` time, and easily search on subslices to refine a previous search.
 ///
@@ -24,7 +22,7 @@ use super::map;
 /// The main downside of a [`PrefixArraySet`] over a trie type datastructure is that insertions have a significant `O(n)` cost,
 /// so if you are adding multiple values over the lifetime of the [`PrefixArraySet`] it may become less efficient overall than a traditional tree.
 #[derive(PartialEq, Eq)]
-pub struct PrefixArraySet<K: Borrow<str>>(map::PrefixArray<K, ()>);
+pub struct PrefixArraySet<K: Borrow<str>>(pub(crate) Vec<K>);
 
 impl<K: Borrow<str> + fmt::Debug> fmt::Debug for PrefixArraySet<K> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -56,7 +54,7 @@ impl<K: Borrow<str>> PrefixArraySet<K> {
     /// This function will not allocate anything.
     #[must_use]
     pub const fn new() -> Self {
-        Self(map::PrefixArray::new())
+        Self(Vec::new())
     }
 
     /// Creates a new empty [`PrefixArraySet`] with space for at least `capacity` elements.
@@ -67,7 +65,7 @@ impl<K: Borrow<str>> PrefixArraySet<K> {
     /// Panics if the new capacity exceeds `isize::MAX` bytes.
     #[must_use]
     pub fn with_capacity(capacity: usize) -> Self {
-        Self(map::PrefixArray::with_capacity(capacity))
+        Self(Vec::with_capacity(capacity))
     }
 
     /// Reserves capacity for at least `additional` more elements to be inserted, the collection may reserve additional space as a speculative optimization.
@@ -97,29 +95,24 @@ impl<K: Borrow<str>> PrefixArraySet<K> {
     /// This operation is `O(n log n)`.
     #[must_use]
     pub fn from_vec_lossy(v: Vec<K>) -> Self {
-        Self(map::PrefixArray::from_vec_lossy(
-            v.into_iter().map(|v| (v, ())).collect(),
-        ))
+        Self::from_vec_lossy_impl(v)
     }
 
     /// Inserts the given K into the [`PrefixArraySet`], returning true if the key was not already in the set
     ///
     /// This operation is `O(n)`.
     pub fn insert(&mut self, key: K) -> bool {
-        self.0.insert(key, ()).is_none()
+        self.insert_impl(key).is_none()
     }
 
     /// Adds a value to the set, replacing the existing value, if any, that is equal to the given one.  
     /// Returns the replaced value.
     pub fn replace(&mut self, key: K) -> Option<K> {
-        // This functionality is not available in the HashMap api so we will make it ourself
-        match (self.0)
-            .0
-            .binary_search_by_key(&key.borrow(), |s| s.0.borrow())
-        {
-            Ok(idx) => Some(core::mem::replace(&mut (self.0).0[idx].0, key)),
+        // This functionality is not shared in PrefixOwned so we will make it ourself
+        match (self.0).binary_search_by_key(&key.borrow(), |s| s.borrow()) {
+            Ok(idx) => Some(core::mem::replace(&mut (self.0)[idx], key)),
             Err(idx) => {
-                (self.0).0.insert(idx, (key, ()));
+                self.0.insert(idx, key);
                 None
             }
         }
@@ -139,7 +132,9 @@ impl<K: Borrow<str>> PrefixArraySet<K> {
     /// assert_eq!(set.to_vec(), &["a", "c"]);
     /// ```
     pub fn drain_all_with_prefix<'a>(&'a mut self, prefix: &str) -> Drain<'a, K> {
-        Drain(self.0.drain_all_with_prefix(prefix))
+        let range = self.find_all_with_prefix_idx_impl(prefix);
+
+        Drain(self.0.drain(range))
     }
 
     /// Drains all elements of the [`PrefixArraySet`], returning them in an iterator.
@@ -147,14 +142,14 @@ impl<K: Borrow<str>> PrefixArraySet<K> {
     ///
     /// When this iterator is dropped it drops all remaining elements.
     pub fn drain(&mut self) -> Drain<K> {
-        Drain(self.0.drain())
+        Drain(self.0.drain(..))
     }
 
     /// Removes the value that matches the given key, returning true if it was present in the set
     ///
     /// This operation is `O(log n)` if the key was not found, and `O(n)` if it was.
     pub fn remove(&mut self, key: &str) -> bool {
-        self.0.remove(key).is_some()
+        self.remove_entry_impl(key).is_some()
     }
 
     /// Returns the total capacity that the [`PrefixArraySet`] has.
@@ -191,15 +186,12 @@ impl<K: Borrow<str>> PrefixArraySet<K> {
     where
         I: IntoIterator<Item = K>,
     {
-        self.0
-            .extend_with_raw(&mut scratch.0, iter.into_iter().map(|k| (k, ())));
+        self.extend_with_impl(&mut scratch.0, iter);
     }
 
     /// Makes a `PrefixArraySet` from an iterator in which all key items are unique
     fn from_unique_iter<T: IntoIterator<Item = K>>(v: T) -> Self {
-        Self(map::PrefixArray::from_unique_iter(
-            v.into_iter().map(|k| (k, ())),
-        ))
+        Self::from_unique_iter_impl(v)
     }
 }
 
@@ -235,7 +227,7 @@ impl<K: Borrow<str>> From<alloc::collections::BTreeSet<K>> for PrefixArraySet<K>
 
 impl<K: Borrow<str>> From<PrefixArraySet<K>> for Vec<K> {
     fn from(v: PrefixArraySet<K>) -> Vec<K> {
-        Vec::from(v.0).into_iter().map(|(k, ())| k).collect()
+        v.0
     }
 }
 
@@ -243,7 +235,7 @@ impl<K: Borrow<str>> Deref for PrefixArraySet<K> {
     type Target = SetSubSlice<K>;
 
     fn deref(&self) -> &Self::Target {
-        SetSubSlice::from_map_slice(&*self.0)
+        SetSubSlice::cast_from_slice_core(&self.0)
     }
 }
 
@@ -258,7 +250,7 @@ impl<K: Borrow<str> + Clone> ToOwned for SetSubSlice<K> {
 
     fn to_owned(&self) -> PrefixArraySet<K> {
         // here we can assert the invariants were upheld
-        PrefixArraySet(map::PrefixArray(self.0.to_vec()))
+        PrefixArraySet(self.to_vec())
     }
 
     fn clone_into(&self, target: &mut PrefixArraySet<K>) {
@@ -279,15 +271,22 @@ impl<K: Borrow<str> + fmt::Debug> fmt::Debug for SetSubSlice<K> {
 // SAFETY: this type must remain repr(transparent) to map::SubSlice<K, ()> for from_map_slice invariants
 #[repr(transparent)]
 #[derive(PartialEq, Eq)]
-pub struct SetSubSlice<K: Borrow<str>>(map::SubSlice<K, ()>);
+pub struct SetSubSlice<K: Borrow<str>>(pub(crate) [K]);
 
 impl<K: Borrow<str>> SetSubSlice<K> {
     /// creates a ref to Self from a ref to backing storage
     // bypass lint level
     #[allow(unsafe_code)]
-    fn from_map_slice(v: &map::SubSlice<K, ()>) -> &Self {
+    pub(crate) fn cast_from_slice_core(v: &[K]) -> &Self {
         // SAFETY: this type is repr(transparent), and the lifetimes are both &'a
-        unsafe { &*(v as *const map::SubSlice<K, ()> as *const SetSubSlice<K>) }
+        unsafe { &*(v as *const [K] as *const SetSubSlice<K>) }
+    }
+
+    // bypass lint level
+    #[allow(unsafe_code)]
+    pub(crate) fn cast_from_slice_mut_core(v: &mut [K]) -> &mut Self {
+        // SAFETY: this type is repr(transparent), and the lifetimes are both &'a
+        unsafe { &mut *(v as *mut [K] as *mut SetSubSlice<K>) }
     }
 
     /// Returns an iterator over all of the elements of this [`SetSubSlice`]
@@ -301,7 +300,7 @@ impl<K: Borrow<str>> SetSubSlice<K> {
     where
         K: Clone,
     {
-        (self.0).0.iter().map(|(k, ())| k.clone()).collect()
+        self.0.to_vec()
     }
 
     /// Returns the `SetSubSlice` where all `K` have the same prefix `prefix`.
@@ -318,7 +317,8 @@ impl<K: Borrow<str>> SetSubSlice<K> {
     /// assert_eq!(set.find_all_with_prefix("b").to_vec(), vec!["bar", "baz"]);
     /// ```
     pub fn find_all_with_prefix<'a>(&'a self, prefix: &str) -> &'a Self {
-        Self::from_map_slice(self.0.find_all_with_prefix(prefix))
+        let range = self.find_all_with_prefix_idx_impl(prefix);
+        self.reslice(range)
     }
 
     /// Compute the common prefix of this [`SetSubSlice`] from the data.
@@ -335,14 +335,14 @@ impl<K: Borrow<str>> SetSubSlice<K> {
     ///
     /// This operation is `O(1)`, but it is not computationally free.
     pub fn common_prefix(&self) -> &str {
-        self.0.common_prefix()
+        self.common_prefix_impl()
     }
 
     /// Returns whether this [`SetSubSlice`] contains the given key
     ///
     /// This operation is `O(log n)`.
     pub fn contains(&self, key: &str) -> bool {
-        self.0.contains_key(key)
+        self.contains_key_impl(key)
     }
 
     /// Returns whether this [`SetSubSlice`] is empty
