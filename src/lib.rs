@@ -1,3 +1,21 @@
+// STOP! Are you trying to read this crates source code?
+//
+// shared.rs contains the primary implementations of PrefixArray* and *SubSlice in a trait form.
+// Its done this way so that PrefixArray can be a Vec<(K, V)> and PrefixArraySet can be a Vec<K>,
+// instead of having PrefixArraySet be a PrefixArray<K, ()> under the hood (this allows some extra
+// safe guarantees like being able to expose &[K] safely in public apis).
+//
+// Unsafe code worth auditing is in shared/vec_ext.rs, which houses the only significant unsafe
+// code in the crate (and is the only place where a safety bug could potentially be, as other
+// unsafe uses are trivial).
+//
+// map.rs and set.rs contain public api and public impls for PrefixArray/Set and Set/SubSlice
+// while the associated (map|set)/iter.rs contains boilerplate for the iterators they implement.
+//
+// Most test cases live in map.rs where they are tested against the public api of PrefixArray, as
+// it shares logic with PrefixArraySet; if it is correct PrefixArraySet (a subset of it) should also
+// be correct. We do need more test cases to comprehensively prove some behaviours still.
+//
 #![no_std]
 #![deny(unsafe_code)]
 #![warn(clippy::pedantic)]
