@@ -13,7 +13,6 @@ use core::{
 };
 
 mod iter;
-pub(crate) mod vec_ext;
 pub use iter::{Drain, IntoIter, Iter, IterMut};
 
 use crate::shared::{PrefixBorrowed, PrefixOwned, ScratchSpace};
@@ -587,5 +586,30 @@ mod test {
 
         assert!(scratch.0.is_empty());
         assert_eq!(scratch.0.capacity(), 2);
+    }
+
+    #[test]
+    fn insert_wont_update_key() {
+        #[derive(Debug)]
+        struct TrackerStr<'a>(&'a str, u64);
+
+        impl core::borrow::Borrow<str> for TrackerStr<'_> {
+            fn borrow(&self) -> &str {
+                self.0
+            }
+        }
+
+        let mut arr = PrefixArray::<TrackerStr<'static>, u8>::new();
+
+        arr.insert(TrackerStr("abc", 0), 0);
+
+        assert_eq!(arr.get("abc"), Some(&0));
+
+        arr.insert(TrackerStr("abc", 1), 1);
+
+        assert!(matches!(
+            arr.get_key_value("abc"),
+            Some((TrackerStr("abc", 0), 1))
+        ));
     }
 }

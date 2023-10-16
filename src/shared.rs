@@ -6,6 +6,9 @@ use core::{borrow::Borrow, cmp::Ordering};
 
 use alloc::vec::Vec;
 
+mod vec_ext;
+use vec_ext::InsertMany;
+
 mod sealed {
 
     use core::borrow::Borrow;
@@ -110,8 +113,6 @@ pub(crate) trait PrefixOwned<V>: Sized {
     where
         I: IntoIterator<Item = Self::Data>,
     {
-        use crate::map::vec_ext::InsertMany;
-
         let iter = iter.into_iter();
 
         // clear for correctness, a scratchspace should become empty after an insert_many call and
