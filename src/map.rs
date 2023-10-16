@@ -13,11 +13,11 @@ use core::{
     ops::{Deref, DerefMut},
 };
 
-pub(crate) mod vec_ext;
 mod iter;
+pub(crate) mod vec_ext;
 pub use iter::{Drain, IntoIter, Iter, IterMut};
 
-use crate::shared::{PrefixOwned, ScratchSpace};
+use crate::shared::{PrefixBorrowed, PrefixOwned, ScratchSpace};
 
 /// A generic search-by-prefix array designed to find strings with common prefixes in `O(log n)` time, and easily search on subslices to refine a previous search.
 ///
@@ -311,7 +311,7 @@ impl<K: Borrow<str>, V> SubSlice<K, V> {
     /// Generates a Self from a ref to backing storage
     // bypass lint level
     #[allow(unsafe_code)]
-    const fn cast_from_slice(v: &[(K, V)]) -> &Self {
+    pub(crate) const fn cast_from_slice_core(v: &[(K, V)]) -> &Self {
         // SAFETY: we are repr(transparent) with [(K, V)], and the lifetime/mutability remains identical
         unsafe { mem::transmute(v) }
     }
@@ -319,22 +319,9 @@ impl<K: Borrow<str>, V> SubSlice<K, V> {
     /// Generates a Self from a mut ref to backing storage
     // bypass lint level
     #[allow(unsafe_code)]
-    fn cast_from_slice_mut(v: &mut [(K, V)]) -> &mut Self {
+    pub(crate) fn cast_from_slice_mut_core(v: &mut [(K, V)]) -> &mut Self {
         // SAFETY: we are repr(transparent) with [(K, V)], and the lifetime/mutability remains identical
         unsafe { &mut *(v as *mut [(K, V)] as *mut Self) }
-    }
-
-    /// reslices self, panics on oob
-    fn reslice<I: core::slice::SliceIndex<[(K, V)], Output = [(K, V)]>>(&self, i: I) -> &Self {
-        Self::cast_from_slice(&self.as_slice()[i])
-    }
-
-    /// reslices self, panics on oob
-    fn reslice_mut<I: core::slice::SliceIndex<[(K, V)], Output = [(K, V)]>>(
-        &mut self,
-        i: I,
-    ) -> &mut Self {
-        Self::cast_from_slice_mut(&mut self.0[i])
     }
 
     /// Returns inner contents as immutable slice
@@ -368,25 +355,7 @@ impl<K: Borrow<str>, V> SubSlice<K, V> {
     /// ```
     ///
     pub fn from_mut_slice(data: &mut [(K, V)]) -> Result<&mut Self, DuplicatesPresent<'_>> {
-        data.sort_unstable_by(|a, b| a.0.borrow().cmp(b.0.borrow()));
-
-        if data.len() <= 1 {
-            return Ok(Self::cast_from_slice_mut(data));
-        }
-
-        let mut error = None;
-
-        for (idx, d) in data.windows(2).enumerate() {
-            if d[0].0.borrow() == d[1].0.borrow() {
-                error = Some(idx);
-                break;
-            }
-        }
-
-        match error {
-            Some(idx) => Err(DuplicatesPresent(data[idx].0.borrow())),
-            None => Ok(Self::cast_from_slice_mut(data)),
-        }
+        Self::from_mut_slice_impl(data).map_err(|e| DuplicatesPresent(e.0))
     }
 
     /// An immutable iterator over all the elements in this slice in sorted-by-key order.
@@ -406,28 +375,7 @@ impl<K: Borrow<str>, V> SubSlice<K, V> {
 
     /// Finds all items with the given prefix using binary search
     fn find_all_with_prefix_idx(&self, prefix: &str) -> core::ops::Range<usize> {
-        // skip comparisons if we have a unit prefix
-        if prefix.is_empty() {
-            return 0..self.len();
-        }
-
-        if let Ok(start) = self.as_slice().binary_search_by(|s| {
-            if s.0.borrow().starts_with(prefix) {
-                Ordering::Equal
-            } else {
-                s.0.borrow().cmp(prefix)
-            }
-        }) {
-            let min =
-                self.as_slice()[..start].partition_point(|s| !s.0.borrow().starts_with(prefix));
-            let max = self.as_slice()[start..]
-                .partition_point(|s| s.0.borrow().starts_with(prefix))
-                + start;
-
-            min..max
-        } else {
-            0..0
-        }
+        self.find_all_with_prefix_idx_impl(prefix)
     }
 
     /// Returns the `SubSlice` where all `K` have the same prefix `prefix`.
@@ -491,30 +439,7 @@ impl<K: Borrow<str>, V> SubSlice<K, V> {
     ///
     /// This operation is `O(1)`, but it is not computationally free.
     pub fn common_prefix(&self) -> &str {
-        let Some(first) = self.as_slice().first().map(|s| s.0.borrow()) else {
-            return "";
-        };
-
-        let Some(last) = self.as_slice().last().map(|s| s.0.borrow()) else {
-            return "";
-        };
-
-        let last_idx = first.len().min(last.len());
-
-        let mut end_idx = 0;
-
-        for ((idx, fch), lch) in first
-            .char_indices()
-            .zip(last.chars())
-            .chain([((last_idx, ' '), ' ')])
-        {
-            end_idx = idx;
-            if fch != lch {
-                break;
-            }
-        }
-
-        &first[..end_idx]
+        self.common_prefix_impl()
     }
 
     /// Returns whether this [`SubSlice`] contains the given key
@@ -529,42 +454,28 @@ impl<K: Borrow<str>, V> SubSlice<K, V> {
     /// assert!(arr.contains_key("1234"));
     /// ```
     pub fn contains_key(&self, key: &str) -> bool {
-        self.as_slice()
-            .binary_search_by_key(&key, |s| s.0.borrow())
-            .is_ok()
+        self.contains_key_impl(key)
     }
 
     /// Gets an immutable ref to the value behind the given key if it exists
     ///
     /// This operation is `O(log n)`.
     pub fn get(&self, key: &str) -> Option<&V> {
-        match self.as_slice().binary_search_by_key(&key, |s| s.0.borrow()) {
-            Ok(idx) => Some(&self.as_slice()[idx].1),
-            Err(_) => None,
-        }
+        self.get_impl(key).map(|(_k, v)| v)
     }
 
     /// Gets a mutable ref to the value behind the given key if it exists.
     ///
     /// This operation is `O(log n)`.
     pub fn get_mut(&mut self, key: &str) -> Option<&mut V> {
-        match self.0.binary_search_by_key(&key, |s| s.0.borrow()) {
-            Ok(idx) => Some(&mut self.0[idx].1),
-            Err(_) => None,
-        }
+        self.get_mut_impl(key).map(|(_k, v)| v)
     }
 
     /// Returns the key value pair corresponding to the given key.
     ///
     /// This operation is `O(log n)`.
     pub fn get_key_value(&self, key: &str) -> Option<(&K, &V)> {
-        match self.0.binary_search_by_key(&key, |s| s.0.borrow()) {
-            Ok(idx) => Some({
-                let (k, v) = &self.0[idx];
-                (k, v)
-            }),
-            Err(_) => None,
-        }
+        self.get_impl(key).map(|(k, v)| (k, v))
     }
 
     /// An iterator visiting all key value pairs in sorted-by-key order, with mutable references to the values.

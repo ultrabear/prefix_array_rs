@@ -19,13 +19,13 @@ mod sealed {
     }
 
     impl<K: Borrow<str>> PrefixMapOrSet for crate::PrefixArraySet<K> {
-        type Item = (K, ());
+        type Item = K;
     }
 }
 
 use sealed::PrefixMapOrSet;
 
-use crate::PrefixArray;
+use crate::{PrefixArray, PrefixArraySet, SubSlice};
 
 /// Scratch space for the `extend_with` methods on [`PrefixArray`](super::PrefixArray) and [`PrefixArraySet`](super::PrefixArraySet)
 ///
@@ -54,6 +54,8 @@ impl<T: PrefixMapOrSet> ScratchSpace<T> {
     }
 }
 
+/// A trait that abstracts over PrefixArray and PrefixArraySet owned variants
+/// This allows defining implementations once
 pub(crate) trait PrefixOwned<V>: Sized {
     type Data;
 
@@ -165,7 +167,188 @@ impl<K: Borrow<str>, V> PrefixOwned<V> for PrefixArray<K, V> {
     }
 
     fn replace_value(src: Self::Data, dst: &mut Self::Data) -> V {
-        core::mem::replace(dst, src).1
+        core::mem::replace(&mut dst.1, src.1)
+    }
+
+    fn as_str(v: &Self::Data) -> &str {
+        v.0.borrow()
+    }
+}
+
+/*
+impl<K: Borrow<str>> PrefixOwned<()> for PrefixArraySet<K> {
+    type Data = K;
+
+    fn construct(v: Vec<Self::Data>) -> Self {
+        Self(v)
+    }
+
+    fn as_str(v: &Self::Data) -> &str {
+        v.borrow()
+    }
+
+    // no op
+    fn replace_value(_src: Self::Data, _dst: &mut Self::Data) {}
+
+    fn get_vec_mut(&mut self) -> &mut Vec<Self::Data> {
+        &mut self.0
+    }
+}
+*/
+
+use core::slice::SliceIndex;
+
+struct DuplicatesPresent<'a>(pub(crate) &'a str);
+
+pub(crate) trait PrefixBorrowed {
+    type Data;
+
+    fn get_mut_slice(&mut self) -> &mut [Self::Data];
+    fn get_slice(&self) -> &[Self::Data];
+
+    fn cast_from_slice_mut(s: &mut [Self::Data]) -> &mut Self;
+    fn cast_from_slice(s: &[Self::Data]) -> &Self;
+
+    fn as_str(v: &Self::Data) -> &str;
+
+    fn cmp(a: &Self::Data, b: &Self::Data) -> Ordering {
+        Self::as_str(a).cmp(Self::as_str(b))
+    }
+
+    fn eq(a: &Self::Data, b: &Self::Data) -> bool {
+        Self::cmp(a, b).is_eq()
+    }
+
+    /// reslices self, panics on oob
+    fn reslice<I: SliceIndex<[Self::Data], Output = [Self::Data]>>(&self, i: I) -> &Self {
+        Self::cast_from_slice(&self.get_slice()[i])
+    }
+
+    /// reslices self, panics on oob
+    fn reslice_mut<I: SliceIndex<[Self::Data], Output = [Self::Data]>>(
+        &mut self,
+        i: I,
+    ) -> &mut Self {
+        Self::cast_from_slice_mut(&mut self.get_mut_slice()[i])
+    }
+
+    fn from_mut_slice_impl(data: &mut [Self::Data]) -> Result<&mut Self, DuplicatesPresent<'_>> {
+        data.sort_unstable_by(|a, b| Self::cmp(a, b));
+
+        if data.len() <= 1 {
+            return Ok(Self::cast_from_slice_mut(data));
+        }
+
+        let mut error = None;
+
+        for (idx, d) in data.windows(2).enumerate() {
+            if Self::eq(&d[0], &d[1]) {
+                error = Some(idx);
+                break;
+            }
+        }
+
+        match error {
+            Some(idx) => Err(DuplicatesPresent(Self::as_str(&data[idx]))),
+            None => Ok(Self::cast_from_slice_mut(data)),
+        }
+    }
+
+    /// Finds all items with the given prefix using binary search
+    fn find_all_with_prefix_idx_impl(&self, prefix: &str) -> core::ops::Range<usize> {
+        // skip comparisons if we have a unit prefix
+        if prefix.is_empty() {
+            return 0..self.get_slice().len();
+        }
+
+        if let Ok(start) = self.get_slice().binary_search_by(|s| {
+            if Self::as_str(s).starts_with(prefix) {
+                Ordering::Equal
+            } else {
+                Self::as_str(s).cmp(prefix)
+            }
+        }) {
+            let min =
+                self.get_slice()[..start].partition_point(|s| !Self::as_str(s).starts_with(prefix));
+            let max = self.get_slice()[start..]
+                .partition_point(|s| Self::as_str(s).starts_with(prefix))
+                + start;
+
+            min..max
+        } else {
+            0..0
+        }
+    }
+
+    fn common_prefix_impl(&self) -> &str {
+        let Some(first) = self.get_slice().first().map(|s| Self::as_str(s)) else {
+            return "";
+        };
+
+        let Some(last) = self.get_slice().last().map(|s| Self::as_str(s)) else {
+            return "";
+        };
+
+        let last_idx = first.len().min(last.len());
+
+        let mut end_idx = 0;
+
+        for ((idx, fch), lch) in first
+            .char_indices()
+            .zip(last.chars())
+            .chain([((last_idx, ' '), ' ')])
+        {
+            end_idx = idx;
+            if fch != lch {
+                break;
+            }
+        }
+
+        &first[..end_idx]
+    }
+
+    fn contains_key_impl(&self, key: &str) -> bool {
+        self.get_slice()
+            .binary_search_by_key(&key, |s| Self::as_str(s))
+            .is_ok()
+    }
+
+    fn get_impl(&self, key: &str) -> Option<&Self::Data> {
+        match self
+            .get_slice()
+            .binary_search_by_key(&key, |s| Self::as_str(s))
+        {
+            Ok(idx) => Some(&self.get_slice()[idx]),
+            Err(_) => None,
+        }
+    }
+
+    fn get_mut_impl(&mut self, key: &str) -> Option<&mut Self::Data> {
+        match self
+            .get_slice()
+            .binary_search_by_key(&key, |s| Self::as_str(s))
+        {
+            Ok(idx) => Some(&mut self.get_mut_slice()[idx]),
+            Err(_) => None,
+        }
+    }
+}
+
+impl<K: Borrow<str>, V> PrefixBorrowed for SubSlice<K, V> {
+    type Data = (K, V);
+
+    fn get_mut_slice(&mut self) -> &mut [Self::Data] {
+        &mut self.0
+    }
+    fn get_slice(&self) -> &[Self::Data] {
+        &self.0
+    }
+
+    fn cast_from_slice_mut(s: &mut [Self::Data]) -> &mut Self {
+        Self::cast_from_slice_mut_core(s)
+    }
+    fn cast_from_slice(s: &[Self::Data]) -> &Self {
+        Self::cast_from_slice_core(s)
     }
 
     fn as_str(v: &Self::Data) -> &str {
