@@ -103,15 +103,14 @@ pub(crate) trait PrefixOwned<V>: Sized {
         replacer: F,
         data: Self::Data,
     ) -> Option<T> {
-        match self
-            .get_vec_mut()
-            .binary_search_by_key(&Self::as_str(&data), |s| Self::as_str(s))
-        {
+        let vec = self.get_vec_mut();
+
+        match vec.binary_search_by_key(&Self::as_str(&data), |s| Self::as_str(s)) {
             Err(idx) => {
-                self.get_vec_mut().insert(idx, data);
+                vec.insert(idx, data);
                 None
             }
-            Ok(idx) => Some(replacer(&mut self.get_vec_mut()[idx], data)),
+            Ok(idx) => Some(replacer(&mut vec[idx], data)),
         }
     }
 
