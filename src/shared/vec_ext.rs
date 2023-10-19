@@ -1,3 +1,4 @@
+//! Vec extension module that contains the unsafe extension `InsertMany`
 extern crate alloc;
 
 use alloc::vec::Vec;

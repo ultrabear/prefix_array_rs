@@ -9,11 +9,14 @@ use alloc::vec::Vec;
 mod vec_ext;
 use vec_ext::InsertMany;
 
+/// Sealed module to prevent `PrefixMapOrSet` leaking
 mod sealed {
 
     use core::borrow::Borrow;
 
+    /// private-public bounding trait representing any valid `PrefixArray` or `PrefixArraySet`
     pub trait PrefixMapOrSet {
+        /// The Data that this collection stores for scratch space
         type Item;
     }
 
@@ -60,24 +63,32 @@ impl<T: PrefixMapOrSet> ScratchSpace<T> {
 /// A trait that abstracts over `PrefixArray` and `PrefixArraySet` owned variants
 /// This allows defining implementations once
 pub(crate) trait PrefixOwned<V>: Sized {
+    /// The data that this `PrefixOwned` stores internally
     type Data;
 
+    /// Builds a new owned instance from a Vec of backing Data
     fn construct(v: Vec<Self::Data>) -> Self;
 
+    /// Replaces only the value portion in a Data, may be a no op for valueless data
     fn replace_value(src: Self::Data, dst: &mut Self::Data) -> V;
 
+    /// Returns the indexable string from this Data
     fn as_str(v: &Self::Data) -> &str;
 
+    /// Gets mutable reference to inner Vec
     fn get_vec_mut(&mut self) -> &mut Vec<Self::Data>;
 
+    /// Convenience fn to compare two Data by their string repr
     fn cmp(a: &Self::Data, b: &Self::Data) -> Ordering {
         Self::as_str(a).cmp(Self::as_str(b))
     }
 
+    /// Convenience fn to compare two Data by their string repr
     fn eq(a: &Self::Data, b: &Self::Data) -> bool {
         Self::cmp(a, b).is_eq()
     }
 
+    /// Implements the `from_vec_lossy` impl that sorts and discards duplicates
     fn from_vec_lossy_impl(mut v: Vec<Self::Data>) -> Self {
         v.sort_unstable_by(|f, s| Self::as_str(f).cmp(Self::as_str(s)));
         v.dedup_by(|f, s| Self::as_str(f) == Self::as_str(s));
@@ -85,6 +96,8 @@ pub(crate) trait PrefixOwned<V>: Sized {
         Self::construct(v)
     }
 
+    /// Implements the `insert` impl that inserts new key value pairs, and on a preexisting key only
+    /// updates the value
     fn insert_impl(&mut self, data: Self::Data) -> Option<V> {
         match self
             .get_vec_mut()
@@ -98,6 +111,7 @@ pub(crate) trait PrefixOwned<V>: Sized {
         }
     }
 
+    /// Implements the `remove_entry` impl that removes something fully with the given key if it exists
     fn remove_entry_impl(&mut self, key: &str) -> Option<Self::Data> {
         if let Ok(idx) = self
             .get_vec_mut()
@@ -109,6 +123,8 @@ pub(crate) trait PrefixOwned<V>: Sized {
         }
     }
 
+    /// Implements the `extend_with` impl that takes a scratch space and an iterator of addable data
+    /// to extend the collection
     fn extend_with_impl<I>(&mut self, insert: &mut Vec<(usize, Self::Data)>, iter: I)
     where
         I: IntoIterator<Item = Self::Data>,
@@ -147,9 +163,10 @@ pub(crate) trait PrefixOwned<V>: Sized {
         self.get_vec_mut().insert_many(insert);
     }
 
+    /// Implements the `from_unique_iter` impl that builds a collection from an iterator that is
+    /// guaranteed to have unique key items
     fn from_unique_iter_impl<T: IntoIterator<Item = Self::Data>>(v: T) -> Self {
         let mut unsorted = v.into_iter().collect::<Vec<Self::Data>>();
-        // can't use by_key because of lifetime issues with as_ref
         unsorted.sort_unstable_by(|f, s| Self::cmp(f, s));
 
         Self::construct(unsorted)
@@ -197,23 +214,35 @@ impl<K: Borrow<str>> PrefixOwned<()> for PrefixArraySet<K> {
 
 use core::slice::SliceIndex;
 
+/// Internal `DuplicatesPresent` error, this location may become public in the future to allow
+/// map/set to both define `from_mut_slice` more seamlessly
 pub(crate) struct DuplicatesPresent<'a>(pub(crate) &'a str);
 
+/// A trait that abstracts over `PrefixArray` and `PrefixArraySet` borrowed variants
+/// This allows defining implementations once
 pub(crate) trait PrefixBorrowed {
+    /// The data that this `PrefixBorrowed` stores internally
     type Data;
 
+    /// gets inner slice mutably
     fn get_mut_slice(&mut self) -> &mut [Self::Data];
+    /// gets inner slice
     fn get_slice(&self) -> &[Self::Data];
 
+    /// Builds Self from a mutable slice
     fn cast_from_slice_mut(s: &mut [Self::Data]) -> &mut Self;
+    /// Builds Self from a slice
     fn cast_from_slice(s: &[Self::Data]) -> &Self;
 
+    /// Gets the indexable string from the given Data
     fn as_str(v: &Self::Data) -> &str;
 
+    /// Convenience fn to compare Data by its indexable string
     fn cmp(a: &Self::Data, b: &Self::Data) -> Ordering {
         Self::as_str(a).cmp(Self::as_str(b))
     }
 
+    /// Convenience fn to compare Data by its indexable string
     fn eq(a: &Self::Data, b: &Self::Data) -> bool {
         Self::cmp(a, b).is_eq()
     }
@@ -231,6 +260,8 @@ pub(crate) trait PrefixBorrowed {
         Self::cast_from_slice_mut(&mut self.get_mut_slice()[i])
     }
 
+    /// Implements builds a &mut Self from a slice of Data, validating that it can be a Self and
+    /// sorting internally
     fn from_mut_slice_impl(data: &mut [Self::Data]) -> Result<&mut Self, DuplicatesPresent<'_>> {
         data.sort_unstable_by(|a, b| Self::cmp(a, b));
 
@@ -279,6 +310,7 @@ pub(crate) trait PrefixBorrowed {
         }
     }
 
+    /// Returns the common prefix of all of the keys in the collection
     fn common_prefix_impl(&self) -> &str {
         let Some(first) = self.get_slice().first().map(|s| Self::as_str(s)) else {
             return "";
@@ -306,12 +338,14 @@ pub(crate) trait PrefixBorrowed {
         &first[..end_idx]
     }
 
+    /// Returns whether the collection contains the given key
     fn contains_key_impl(&self, key: &str) -> bool {
         self.get_slice()
             .binary_search_by_key(&key, |s| Self::as_str(s))
             .is_ok()
     }
 
+    /// View the contents of an entry if there is one by the given key
     fn get_impl(&self, key: &str) -> Option<&Self::Data> {
         match self
             .get_slice()
@@ -322,6 +356,7 @@ pub(crate) trait PrefixBorrowed {
         }
     }
 
+    /// View the contents of an entry mutably if there is one by the given key
     fn get_mut_impl(&mut self, key: &str) -> Option<&mut Self::Data> {
         match self
             .get_slice()
