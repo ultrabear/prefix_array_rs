@@ -353,6 +353,27 @@ mod tests {
     use alloc::vec;
 
     #[test]
+    fn replace_replaces() {
+        #[derive(Debug)]
+        struct TrackerStr<'a>(&'a str, u64);
+
+        impl core::borrow::Borrow<str> for TrackerStr<'_> {
+            fn borrow(&self) -> &str {
+                self.0
+            }
+        }
+
+        let mut parray = PrefixArraySet::from_iter([TrackerStr("abc", 0)]);
+
+        assert!(matches!(
+            parray.replace(TrackerStr("abc", 1)),
+            Some(TrackerStr("abc", 0))
+        ));
+
+        assert!(parray.contains("abc"));
+    }
+
+    #[test]
     fn submatches() {
         let parray = PrefixArraySet::from_vec_lossy(vec![
             "abcde", "234234", "among", "we", "weed", "who", "what", "why", "abde", "abch",
