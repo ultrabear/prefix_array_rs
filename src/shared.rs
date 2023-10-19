@@ -36,7 +36,7 @@ use crate::{PrefixArray, PrefixArraySet, SetSubSlice, SubSlice};
 /// Scratch space for the `extend_with` methods on [`PrefixArray`](super::PrefixArray) and [`PrefixArraySet`](super::PrefixArraySet)
 ///
 /// Using this scratch space allows you to potentially call extend multiple times without
-/// allocating, as the default `Extend` method will allocate to avoid severe time penalties
+/// allocating, as the default `Extend` method will allocate to avoid severe time penalties.
 pub struct ScratchSpace<T: PrefixMapOrSet>(pub(crate) Vec<(usize, T::Item)>);
 
 impl<T: PrefixMapOrSet> ScratchSpace<T> {
@@ -98,11 +98,10 @@ pub(crate) trait PrefixOwned<V>: Sized {
 
     /// Implements an `insert` impl that calls a replacer function when a value was already in the
     /// collection
-    fn insert_internal<F: Fn(&mut Self::Data, Self::Data) -> T, T>(
-        &mut self,
-        replacer: F,
-        data: Self::Data,
-    ) -> Option<T> {
+    fn insert_internal<F, T>(&mut self, replacer: F, data: Self::Data) -> Option<T>
+    where
+        F: Fn(&mut Self::Data, Self::Data) -> T,
+    {
         let vec = self.get_vec_mut();
 
         match vec.binary_search_by_key(&Self::as_str(&data), |s| Self::as_str(s)) {
