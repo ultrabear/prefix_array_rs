@@ -17,12 +17,10 @@
 // be correct. We do need more test cases to comprehensively prove some behaviours still.
 //
 #![no_std]
-#![deny(unsafe_code)]
-#![warn(clippy::pedantic)]
-#![warn(clippy::cargo)]
-#![warn(missing_docs)]
-#![allow(clippy::module_name_repetitions)]
 #![warn(clippy::alloc_instead_of_core, clippy::std_instead_of_alloc)]
+#![warn(clippy::pedantic, clippy::cargo)]
+#![allow(clippy::module_name_repetitions)]
+#![warn(missing_docs, clippy::missing_docs_in_private_items)]
 //! `prefix_array` is a crate consisting of datastructures that aid in querying data based on prefixes of string keys,
 //!  the main feature being searching and refining on subgroups with common prefixes.
 //!
