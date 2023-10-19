@@ -1,3 +1,4 @@
+//! Iterator types for `PrefixArraySet`/`SetSubSlice`
 extern crate alloc;
 
 use core::{borrow::Borrow, iter::FusedIterator};

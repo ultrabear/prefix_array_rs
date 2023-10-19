@@ -1,15 +1,19 @@
+//! Iterator types for `PrefixArray`/`SubSlice` types
 extern crate alloc;
 
 use core::{borrow::Borrow, iter::FusedIterator};
 
 // TODO: impl TrustedLen when it becomes stable
 
+/// Asserts double ended
 const fn is_double_ended<T: DoubleEndedIterator>() {}
+/// Asserts fused
 const fn is_fused<T: FusedIterator>() {}
+/// Asserts exactsize
 const fn is_exactsize<T: ExactSizeIterator>() {}
 
 // we dont repeat this code to `set/iter.rs` because those iterators point here and we know we impl the traits
-// Asserts that the iterator type is Fused, DoubleEnded, and ExactSize
+/// Asserts that the iterator type is `Fused`, `DoubleEnded`, and `ExactSize`
 macro_rules! assert_ty {
     ($t:ty) => {
         #[allow(unused)]
@@ -174,6 +178,7 @@ impl<K: Borrow<str>, V> IntoIterator for super::PrefixArray<K, V> {
     }
 }
 
+/// Generates `IntoIterator` implementations for `PrefixArray` types
 macro_rules! into_iter_gen {
     (for $t:ty where Item = $item:ty, IntoIter = $into_iter:ty, do $code:tt ) => {
         impl<'a, K: Borrow<str>, V> IntoIterator for $t {
