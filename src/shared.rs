@@ -2,7 +2,7 @@
 //! [`PrefixArraySet`](super::PrefixArraySet).
 extern crate alloc;
 
-use core::{borrow::Borrow, cmp::Ordering};
+use core::{borrow::Borrow, cmp::Ordering, mem};
 
 use alloc::vec::Vec;
 
@@ -70,7 +70,7 @@ pub(crate) trait PrefixOwned<V>: Sized {
     fn construct(v: Vec<Self::Data>) -> Self;
 
     /// Replaces only the value portion in a Data, may be a no op for valueless data
-    fn replace_value(src: Self::Data, dst: &mut Self::Data) -> V;
+    fn replace_value(dst: &mut Self::Data, src: Self::Data) -> V;
 
     /// Returns the indexable string from this Data
     fn as_str(v: &Self::Data) -> &str;
@@ -96,9 +96,13 @@ pub(crate) trait PrefixOwned<V>: Sized {
         Self::construct(v)
     }
 
-    /// Implements the `insert` impl that inserts new key value pairs, and on a preexisting key only
-    /// updates the value
-    fn insert_impl(&mut self, data: Self::Data) -> Option<V> {
+    /// Implements an `insert` impl that calls a replacer function when a value was already in the
+    /// collection
+    fn insert_internal<F: Fn(&mut Self::Data, Self::Data) -> T, T>(
+        &mut self,
+        replacer: F,
+        data: Self::Data,
+    ) -> Option<T> {
         match self
             .get_vec_mut()
             .binary_search_by_key(&Self::as_str(&data), |s| Self::as_str(s))
@@ -107,8 +111,20 @@ pub(crate) trait PrefixOwned<V>: Sized {
                 self.get_vec_mut().insert(idx, data);
                 None
             }
-            Ok(idx) => Some(Self::replace_value(data, &mut self.get_vec_mut()[idx])),
+            Ok(idx) => Some(replacer(&mut self.get_vec_mut()[idx], data)),
         }
+    }
+
+    /// Implements the `insert` impl that inserts new key value pairs, and on a preexisting key only
+    /// updates the value
+    fn insert_impl(&mut self, data: Self::Data) -> Option<V> {
+        self.insert_internal(Self::replace_value, data)
+    }
+
+    /// Implements the `insert_replace` impl that inserts a new value and always replaces all of
+    /// the previous value if there was one
+    fn insert_replace_impl(&mut self, data: Self::Data) -> Option<Self::Data> {
+        self.insert_internal(mem::replace, data)
     }
 
     /// Implements the `remove_entry` impl that removes something fully with the given key if it exists
@@ -149,7 +165,7 @@ pub(crate) trait PrefixOwned<V>: Sized {
                 Err(idx) => insert.push((idx, k)),
                 // replace old value
                 Ok(idx) => {
-                    Self::replace_value(k, &mut self.get_vec_mut()[idx]);
+                    Self::replace_value(&mut self.get_vec_mut()[idx], k);
                 }
             }
         }
@@ -184,7 +200,7 @@ impl<K: Borrow<str>, V> PrefixOwned<V> for PrefixArray<K, V> {
         &mut self.0
     }
 
-    fn replace_value(src: Self::Data, dst: &mut Self::Data) -> V {
+    fn replace_value(dst: &mut Self::Data, src: Self::Data) -> V {
         core::mem::replace(&mut dst.1, src.1)
     }
 
@@ -205,7 +221,7 @@ impl<K: Borrow<str>> PrefixOwned<()> for PrefixArraySet<K> {
     }
 
     // no op
-    fn replace_value(_src: Self::Data, _dst: &mut Self::Data) {}
+    fn replace_value(_dst: &mut Self::Data, _src: Self::Data) {}
 
     fn get_vec_mut(&mut self) -> &mut Vec<Self::Data> {
         &mut self.0

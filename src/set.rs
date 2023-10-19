@@ -108,14 +108,7 @@ impl<K: Borrow<str>> PrefixArraySet<K> {
     /// Adds a value to the set, replacing the existing value, if any, that is equal to the given one.  
     /// Returns the replaced value.
     pub fn replace(&mut self, key: K) -> Option<K> {
-        // This functionality is not shared in PrefixOwned so we will make it ourself
-        match (self.0).binary_search_by_key(&key.borrow(), |s| s.borrow()) {
-            Ok(idx) => Some(core::mem::replace(&mut (self.0)[idx], key)),
-            Err(idx) => {
-                self.0.insert(idx, key);
-                None
-            }
-        }
+        self.insert_replace_impl(key)
     }
 
     /// Removes all values with the prefix provided, shifting the array in the process to account for the empty space.
