@@ -307,16 +307,12 @@ impl fmt::Display for DuplicatesPresent<'_> {
 
 impl<K: Borrow<str>, V> SubSlice<K, V> {
     /// Generates a Self from a ref to backing storage
-    // bypass lint level
-    #[allow(unsafe_code)]
     pub(crate) const fn cast_from_slice_core(v: &[(K, V)]) -> &Self {
         // SAFETY: we are repr(transparent) with [(K, V)], and the lifetime/mutability remains identical
-        unsafe { mem::transmute(v) }
+        unsafe { &*(v as *const [(K, V)] as *const Self) }
     }
 
     /// Generates a Self from a mut ref to backing storage
-    // bypass lint level
-    #[allow(unsafe_code)]
     pub(crate) fn cast_from_slice_mut_core(v: &mut [(K, V)]) -> &mut Self {
         // SAFETY: we are repr(transparent) with [(K, V)], and the lifetime/mutability remains identical
         unsafe { &mut *(v as *mut [(K, V)] as *mut Self) }

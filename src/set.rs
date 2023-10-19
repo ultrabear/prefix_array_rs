@@ -268,25 +268,22 @@ impl<K: Borrow<str> + fmt::Debug> fmt::Debug for SetSubSlice<K> {
 /// A subslice of a [`PrefixArraySet`] in which all items contain a common prefix (which may be the unit prefix `""`).
 ///
 /// The [`SetSubSlice`] does not store what that common prefix is for performance reasons (but it can be computed, see: [`SetSubSlice::common_prefix`]), it is up to the user to keep track of.
-// SAFETY: this type must remain repr(transparent) to map::SubSlice<K, ()> for from_map_slice invariants
+// SAFETY: this type must remain repr(transparent) to [K] for cast_from_slice(_mut)_core invariants
 #[repr(transparent)]
 #[derive(PartialEq, Eq)]
 pub struct SetSubSlice<K: Borrow<str>>(pub(crate) [K]);
 
 impl<K: Borrow<str>> SetSubSlice<K> {
-    /// creates a ref to Self from a ref to backing storage
-    // bypass lint level
-    #[allow(unsafe_code)]
+    /// creates a shared ref to Self from a ref to backing storage
     pub(crate) fn cast_from_slice_core(v: &[K]) -> &Self {
         // SAFETY: this type is repr(transparent), and the lifetimes are both &'a
-        unsafe { &*(v as *const [K] as *const SetSubSlice<K>) }
+        unsafe { &*(v as *const [K] as *const Self) }
     }
 
-    // bypass lint level
-    #[allow(unsafe_code)]
+    /// creates an owned ref to Self from a ref to backing storage
     pub(crate) fn cast_from_slice_mut_core(v: &mut [K]) -> &mut Self {
         // SAFETY: this type is repr(transparent), and the lifetimes are both &'a
-        unsafe { &mut *(v as *mut [K] as *mut SetSubSlice<K>) }
+        unsafe { &mut *(v as *mut [K] as *mut Self) }
     }
 
     /// Returns an iterator over all of the elements of this [`SetSubSlice`]

@@ -54,9 +54,8 @@ impl<T> InsertMany<T> for Vec<T> {
             );
         }
 
-        // bypass lint level
         // welcome to the Fun Zone
-        #[allow(unsafe_code)]
+        // actual unsafe starts here
         {
             // Set length to zero so we can treat everything as uninitialized
             // SAFETY: 0 is always <= capacity
