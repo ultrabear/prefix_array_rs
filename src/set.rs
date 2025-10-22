@@ -203,7 +203,6 @@ impl<K: Borrow<str>> Extend<K> for PrefixArraySet<K> {
 }
 
 #[cfg(feature = "std")]
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl<K: Borrow<str>, H> From<std::collections::HashSet<K, H>> for PrefixArraySet<K> {
     /// Performs a lossless conversion from a `HashSet<K>` to a `PrefixArraySet<K>` in `O(n log n)` time.
     fn from(v: std::collections::HashSet<K, H>) -> Self {

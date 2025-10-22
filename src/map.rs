@@ -211,7 +211,6 @@ impl<K: Borrow<str>, V> Extend<(K, V)> for PrefixArray<K, V> {
 }
 
 #[cfg(feature = "std")]
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl<K: Borrow<str>, V, H> From<std::collections::HashMap<K, V, H>> for PrefixArray<K, V> {
     /// Performs a lossless conversion from a `HashMap<K, V>` to a `PrefixArray<K, V>` in `O(n log n)` time.
     fn from(v: std::collections::HashMap<K, V, H>) -> Self {
@@ -292,7 +291,6 @@ pub struct SubSlice<K: Borrow<str>, V>(pub(crate) [(K, V)]);
 pub struct DuplicatesPresent<'a>(&'a str);
 
 #[cfg(feature = "std")]
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl std::error::Error for DuplicatesPresent<'_> {}
 
 impl fmt::Display for DuplicatesPresent<'_> {
