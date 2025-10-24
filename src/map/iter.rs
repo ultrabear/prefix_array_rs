@@ -87,10 +87,10 @@ impl<'a, K, V> Iterator for Iter<'a, K, V> {
 }
 
 assert_ty!(core::slice::Iter<'_, ()>);
-impl<'a, K, V> FusedIterator for Iter<'a, K, V> {}
-impl<'a, K, V> ExactSizeIterator for Iter<'a, K, V> {}
+impl<K, V> FusedIterator for Iter<'_, K, V> {}
+impl<K, V> ExactSizeIterator for Iter<'_, K, V> {}
 
-impl<'a, K, V> DoubleEndedIterator for Iter<'a, K, V> {
+impl<K, V> DoubleEndedIterator for Iter<'_, K, V> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         self.0.next_back().map(|(k, v)| (k, v))
@@ -123,10 +123,10 @@ impl<'a, K, V> Iterator for IterMut<'a, K, V> {
 }
 
 assert_ty!(core::slice::IterMut<'_, ()>);
-impl<'a, K, V> FusedIterator for IterMut<'a, K, V> {}
-impl<'a, K, V> ExactSizeIterator for IterMut<'a, K, V> {}
+impl<K, V> FusedIterator for IterMut<'_, K, V> {}
+impl<K, V> ExactSizeIterator for IterMut<'_, K, V> {}
 
-impl<'a, K, V> DoubleEndedIterator for IterMut<'a, K, V> {
+impl<K, V> DoubleEndedIterator for IterMut<'_, K, V> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         self.0.next_back().map(|(k, v)| (&*k, v))
@@ -137,7 +137,7 @@ impl<'a, K, V> DoubleEndedIterator for IterMut<'a, K, V> {
 ///  Holds a mutable reference to the parent `PrefixArray`
 pub struct Drain<'a, K, V>(pub(super) alloc::vec::Drain<'a, (K, V)>);
 
-impl<'a, K, V> Iterator for Drain<'a, K, V> {
+impl<K, V> Iterator for Drain<'_, K, V> {
     type Item = (K, V);
 
     #[inline]
@@ -159,10 +159,10 @@ impl<'a, K, V> Iterator for Drain<'a, K, V> {
 }
 
 assert_ty!(alloc::vec::Drain<'_, ()>);
-impl<'a, K, V> FusedIterator for Drain<'a, K, V> {}
-impl<'a, K, V> ExactSizeIterator for Drain<'a, K, V> {}
+impl<K, V> FusedIterator for Drain<'_, K, V> {}
+impl<K, V> ExactSizeIterator for Drain<'_, K, V> {}
 
-impl<'a, K, V> DoubleEndedIterator for Drain<'a, K, V> {
+impl<K, V> DoubleEndedIterator for Drain<'_, K, V> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         self.0.next_back()

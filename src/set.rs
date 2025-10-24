@@ -105,7 +105,7 @@ impl<K: Borrow<str>> PrefixArraySet<K> {
         self.insert_impl(key).is_none()
     }
 
-    /// Adds a value to the set, replacing the existing value, if any, that is equal to the given one.  
+    /// Adds a value to the set, replacing the existing value, if any, that is equal to the given one.
     /// Returns the replaced value.
     pub fn replace(&mut self, key: K) -> Option<K> {
         self.insert_replace_impl(key)
@@ -134,7 +134,7 @@ impl<K: Borrow<str>> PrefixArraySet<K> {
     /// Keeps the backing allocation intact, unlike [`IntoIter`].
     ///
     /// When this iterator is dropped it drops all remaining elements.
-    pub fn drain(&mut self) -> Drain<K> {
+    pub fn drain(&mut self) -> Drain<'_, K> {
         Drain(self.0.drain(..))
     }
 
@@ -279,7 +279,7 @@ impl<K: Borrow<str>> SetSubSlice<K> {
     }
 
     /// Returns an iterator over all of the elements of this [`SetSubSlice`]
-    pub fn iter(&self) -> Iter<K> {
+    pub fn iter(&self) -> Iter<'_, K> {
         Iter(self.0.iter())
     }
 

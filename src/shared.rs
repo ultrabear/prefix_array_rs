@@ -39,6 +39,12 @@ use crate::{PrefixArray, PrefixArraySet, SetSubSlice, SubSlice};
 /// allocating, as the default `Extend` method will allocate to avoid severe time penalties.
 pub struct ScratchSpace<T: PrefixMapOrSet>(pub(crate) Vec<(usize, T::Item)>);
 
+impl<T: PrefixMapOrSet> Default for ScratchSpace<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T: PrefixMapOrSet> ScratchSpace<T> {
     /// Creates a new empty scratch space
     ///

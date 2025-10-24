@@ -124,7 +124,7 @@ impl<K: Borrow<str>, V> PrefixArray<K, V> {
     /// Keeps the backing allocation intact, unlike [`IntoIter`].
     ///
     /// When this iterator is dropped it drops all remaining elements.
-    pub fn drain(&mut self) -> Drain<K, V> {
+    pub fn drain(&mut self) -> Drain<'_, K, V> {
         Drain(self.0.drain(..))
     }
 
@@ -351,7 +351,7 @@ impl<K: Borrow<str>, V> SubSlice<K, V> {
     }
 
     /// An immutable iterator over all the elements in this slice in sorted-by-key order.
-    pub fn iter(&self) -> Iter<K, V> {
+    pub fn iter(&self) -> Iter<'_, K, V> {
         Iter(self.as_slice().iter())
     }
 
@@ -471,7 +471,7 @@ impl<K: Borrow<str>, V> SubSlice<K, V> {
     }
 
     /// An iterator visiting all key value pairs in sorted-by-key order, with mutable references to the values.
-    pub fn iter_mut(&mut self) -> IterMut<K, V> {
+    pub fn iter_mut(&mut self) -> IterMut<'_, K, V> {
         IterMut(self.0.iter_mut())
     }
 

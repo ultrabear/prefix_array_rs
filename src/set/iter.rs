@@ -63,10 +63,10 @@ impl<'a, K> Iterator for Iter<'a, K> {
     // TODO impl advance_by when feature(iter_advance_by) is stabilized
 }
 
-impl<'a, K> FusedIterator for Iter<'a, K> {}
-impl<'a, K> ExactSizeIterator for Iter<'a, K> {}
+impl<K> FusedIterator for Iter<'_, K> {}
+impl<K> ExactSizeIterator for Iter<'_, K> {}
 
-impl<'a, K> DoubleEndedIterator for Iter<'a, K> {
+impl<K> DoubleEndedIterator for Iter<'_, K> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         self.0.next_back()
@@ -77,7 +77,7 @@ impl<'a, K> DoubleEndedIterator for Iter<'a, K> {
 ///  Holds a mutable reference to the parent `PrefixArraySet`
 pub struct Drain<'a, K>(pub(super) alloc::vec::Drain<'a, K>);
 
-impl<'a, K> Iterator for Drain<'a, K> {
+impl<K> Iterator for Drain<'_, K> {
     type Item = K;
 
     #[inline]
@@ -99,10 +99,10 @@ impl<'a, K> Iterator for Drain<'a, K> {
     // TODO impl advance_by when feature(iter_advance_by) is stabilized
 }
 
-impl<'a, K> FusedIterator for Drain<'a, K> {}
-impl<'a, K> ExactSizeIterator for Drain<'a, K> {}
+impl<K> FusedIterator for Drain<'_, K> {}
+impl<K> ExactSizeIterator for Drain<'_, K> {}
 
-impl<'a, K> DoubleEndedIterator for Drain<'a, K> {
+impl<K> DoubleEndedIterator for Drain<'_, K> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         self.0.next_back()

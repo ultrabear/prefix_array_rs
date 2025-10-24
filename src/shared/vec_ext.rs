@@ -29,7 +29,7 @@ pub(super) trait InsertMany<T> {
     /// This will panic if any index passed is **greater** than the length of the source list
     ///  (it may be **equal** to the length of the list to be appended to the end though (see: [`Vec::extend`] if you wish to do only that)).
     ///
-    /// This will panic if self.len() + insert.len() overflows.
+    /// This will panic if `self.len() + insert.len()` overflows.
     fn insert_many(&mut self, insert: &mut Vec<(usize, T)>);
 }
 
